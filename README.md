@@ -170,15 +170,15 @@
 从多维表格的URL中提取 `app_token` 和 `table_id`：
 
 ```
-https://feishu.cn/base/CVchbNPTraNcq1s3RqPcTJFJnDU?table=tblUP8jpxkIGiSWU&view=...
+https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=...
                     └─────────────────────────────┘      └───────────────┘
                             app_token                        table_id
 ```
 
 | 参数 | 说明 | 示例 |
 |-----|------|------|
-| app_token | `/base/` 后面的字符串 | `CVchbNPTraNcq1s3RqPcTJFJnDU` |
-| table_id | `?table=` 后面的字符串 | `tblUP8jpxkIGiSWU` |
+| app_token | `/base/` 后面的字符串 | `XxXxXxXxXxXxXxXxXxXxXxXxXxX` |
+| table_id | `?table=` 后面的字符串 | `tblXxXxXxXxXxXx` |
 
 ### 第六步：添加应用为协作者
 
