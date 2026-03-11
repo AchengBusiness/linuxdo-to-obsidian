@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinuxDo Saver - 设置</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #2563eb;
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge-obsidian {
+      background: #7c3aed;
+      color: #fff;
+    }
+
+    .badge-feishu {
+      background: #3370ff;
+      color: #fff;
+    }
+
+    .badge-new {
+      background: #059669;
+      color: #fff;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group input[type="number"]:focus,
+    .form-group input[type="password"]:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .form-group input::placeholder {
+      color: #999;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #2563eb;
+    }
+
+    .checkbox-row label {
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .number-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .number-input-row label {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .number-input-row input[type="number"] {
+      width: 80px;
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .number-input-row span {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .sub-options {
+      margin-left: 24px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      transition: opacity 0.2s;
+    }
+
+    .sub-options.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-save {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-save:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-reset {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .btn-reset:hover {
+      background: #e5e5e5;
+    }
+
+    .btn-test {
+      background: #059669;
+      color: #fff;
+      flex: none;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .btn-test:hover {
+      background: #047857;
+    }
+
+    .btn-test:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .status-message {
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .status-message.show {
+      opacity: 1;
+    }
+
+    .status-message.success {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    .status-message.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .tip-box {
+      margin-top: 20px;
+      padding: 12px;
+      background: #eff6ff;
+      border-radius: 6px;
+      border-left: 3px solid #2563eb;
+    }
+
+    .tip-box p {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .tip-box strong {
+      color: #2563eb;
+    }
+
+    .tip-box a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .tip-box a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: #999;
+      border-top: 1px solid #eee;
+    }
+
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .inline-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .inline-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 20px 15px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .inline-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LinuxDo Saver</h1>
+      <p>保存帖子到 Obsidian 或飞书多维表格 V3.5.2</p>
+    </div>
+
+    <div class="content">
+      <form id="optionsForm">
+        <!-- 插件开关 -->
+        <div class="section">
+          <div class="section-title">插件状态</div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="pluginEnabled" checked>
+            <label for="pluginEnabled">启用插件（关闭后书签按钮恢复原功能）</label>
+          </div>
+          <div class="help-text">关闭后需刷新页面生效</div>
+        </div>
+
+        <!-- 保存目标 -->
+        <div class="section">
+          <div class="section-title">保存目标</div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="saveToObsidian" checked>
+            <label for="saveToObsidian">保存到 Obsidian</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="saveToFeishu">
+            <label for="saveToFeishu">保存到飞书多维表格 <span class="badge badge-new">新</span></label>
+          </div>
+
+          <div class="help-text">可以同时保存到两个地方</div>
+        </div>
+
+        <!-- Obsidian 设置 -->
+        <div class="section" id="obsidianSection">
+          <div class="section-title">
+            <span class="badge badge-obsidian">Obsidian</span>
+            Obsidian 设置
+          </div>
+
+          <div class="form-group">
+            <label>Vault 名称</label>
+            <input type="text" id="vaultName" placeholder="留空自动使用当前打开的仓库">
+            <div class="help-text">推荐留空，会自动保存到当前打开的 Obsidian 仓库</div>
+          </div>
+
+          <div class="form-group">
+            <label>保存文件夹</label>
+            <input type="text" id="folderPath" value="LinuxDo收集箱" placeholder="LinuxDo收集箱">
+            <div class="help-text">文件夹不存在会自动创建</div>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="useAdvancedUri" checked>
+            <label for="useAdvancedUri">使用 Advanced URI 插件（支持大内容）</label>
+          </div>
+          <div class="help-text" style="margin-left: 24px;">
+            需先在 Obsidian 中安装 "Advanced URI" 插件
+          </div>
+        </div>
+
+        <!-- 飞书设置 -->
+        <div class="section" id="feishuSection">
+          <div class="section-title">
+            <span class="badge badge-feishu">飞书</span>
+            飞书多维表格设置
+          </div>
+
+          <div id="feishuOptions" class="sub-options disabled">
+            <div class="form-group">
+              <label>API 版本</label>
+              <select id="feishuApiDomain" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                <option value="feishu">飞书国内版 (feishu.cn)</option>
+                <option value="lark">Lark 国际版 (larksuite.com)</option>
+              </select>
+              <div class="help-text">根据你的飞书账号类型选择，国内用户选飞书，海外用户选 Lark</div>
+            </div>
+
+            <div class="form-group">
+              <label>App ID</label>
+              <input type="text" id="feishuAppId" placeholder="cli_xxxxxxxxxxxxxxxx">
+              <div class="help-text">在飞书开放平台创建应用获取</div>
+            </div>
+
+            <div class="form-group">
+              <label>App Secret</label>
+              <input type="password" id="feishuAppSecret" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            </div>
+
+            <div class="form-group">
+              <label>多维表格 app_token</label>
+              <input type="text" id="feishuAppToken" placeholder="bascnxxxxxxxxxxxxxxxx">
+              <div class="help-text">从多维表格 URL 中获取：feishu.cn/base/<strong>bascnxxx</strong>?table=...</div>
+            </div>
+
+            <div class="inline-row">
+              <div class="form-group">
+                <label>数据表 table_id</label>
+                <input type="text" id="feishuTableId" placeholder="tblxxxxxxxxxxxxxxxx">
+              </div>
+              <button type="button" class="btn-test" id="testFeishuBtn">测试连接</button>
+            </div>
+            <div class="help-text">从 URL 中获取：?table=<strong>tblxxx</strong>&view=...</div>
+
+            <div class="checkbox-row" style="margin-top: 12px;">
+              <input type="checkbox" id="feishuUploadAttachment">
+              <label for="feishuUploadAttachment">上传 MD 附件（需额外权限，可选）</label>
+            </div>
+            <div class="help-text" style="margin-left: 24px;">不勾选则只保存文本摘要，无需 drive 权限</div>
+
+            <div class="tip-box" style="margin-top: 16px; background: #fef3c7; border-left-color: #d97706;">
+              <p>
+                <strong>1. 必须的权限（均为免审）：</strong><br>
+                bitable:app（多维表格读写）
+              </p>
+              <p style="margin-top: 8px;">
+                <strong>2. 上传附件的权限（免审）：</strong><br>
+                drive:file:upload（上传文件到云空间）
+              </p>
+              <p style="margin-top: 8px;">
+                <strong>3. 多维表格字段：</strong><br>
+                标题（文本）、链接（超链接）、作者（文本）、保存时间（日期）、评论数（数字）<br>
+                如勾选上传附件：附件（附件）；否则：正文（文本）
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 内容设置 -->
+        <div class="section">
+          <div class="section-title">内容设置</div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="addMetadata" checked>
+            <label for="addMetadata">添加元数据（来源、作者、时间等）</label>
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="includeImages" checked>
+            <label for="includeImages">保留图片链接</label>
+          </div>
+        </div>
+
+        <!-- 评论设置 -->
+        <div class="section">
+          <div class="section-title">评论设置</div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="saveComments">
+            <label for="saveComments">保存评论区</label>
+          </div>
+
+          <div id="commentOptions" class="sub-options disabled">
+            <div class="number-input-row">
+              <label for="commentCount">评论数量：</label>
+              <input type="number" id="commentCount" value="100" min="1" max="3000">
+              <span>条（最多3000）</span>
+            </div>
+
+            <div class="checkbox-row">
+              <input type="checkbox" id="foldComments">
+              <label for="foldComments">折叠评论（使用HTML details标签）</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-save">保存设置</button>
+          <button type="button" class="btn-reset" id="resetBtn">恢复默认</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+      </form>
+
+      <div class="tip-box">
+        <p>
+          <strong>使用方法：</strong><br>
+          - <strong>单击</strong>书签按钮 → 保存到 Obsidian/飞书<br>
+          - <strong>双击</strong>书签按钮 → 添加到 L 站收藏<br>
+          - <strong>Ctrl+Shift+S</strong> → 快捷键保存<br>
+          <strong>飞书配置教程：</strong><a href="https://open.feishu.cn/document/home/introduction-to-custom-app-development/self-built-application-development-process" target="_blank">创建飞书自建应用</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="https://linux.do" target="_blank">LinuxDo</a> |
+      <a href="https://obsidian.md" target="_blank">Obsidian</a> |
+      <a href="https://www.feishu.cn" target="_blank">飞书</a>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
