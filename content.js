@@ -1,4 +1,4 @@
-// LinuxDo to Obsidian - Content Script V3.5.8
+// LinuxDo to Obsidian - Content Script V3.5.10
 // 劫持链接按钮，保存帖子+评论到Obsidian（保留颜色样式）
 // V3.5: 支持同时保存到飞书多维表格（带MD附件）
 // V3.5.1: 单击保存到Obsidian，双击触发L站原生收藏
@@ -9,6 +9,8 @@
 // V3.5.6: 保存时间改为北京时间格式
 // V3.5.7: 改为劫持链接按钮（原书签按钮改为链接按钮）
 // V3.5.8: 修复误触发问题 - 增加严格的区域检测，只拦截帖子操作菜单中的链接按钮
+// V3.5.9: 增强链接按钮检测 - 使用 post-action-menu__copy-link class
+// V3.5.10: 修复评论楼层号获取 - 从 .topic-post 而非 article 获取 data-post-number
 //
 // 功能说明：
 // - 点击主帖链接按钮：保存主帖（如开启"保存评论"则包含所有评论）
@@ -51,6 +53,7 @@
   // 判断是否为帖子/评论区域的链接按钮，返回 { isLink: boolean, postNumber: string|null }
   // V3.5.7: 改为检测链接按钮（原书签按钮）
   // V3.5.8: 修复误触发问题 - 必须在帖子容器内 + 链接按钮特征
+  // V3.5.9: 增强检测 - 使用 data-share-url 属性（Discourse 标准分享按钮特征）
   function isLinkButton(element) {
     if (!element) return { isLink: false, postNumber: null };
 
@@ -65,37 +68,50 @@
       return { isLink: false, postNumber: null };
     }
 
-    // 检查元素特征是否像链接/分享按钮
-    const text = element.textContent || '';
+    // 必须在帖子操作区域内（.post-controls 或 .post-menu-area 或类似区域）
+    const controlsArea = element.closest('.post-controls, .post-menu-area, .actions, nav.post-controls');
+    if (!controlsArea) {
+      return { isLink: false, postNumber: null };
+    }
+
+    // 收集元素属性用于检测
     const className = element.className || '';
-    const dataValue = element.getAttribute('data-value') || '';
+    const dataShareUrl = element.getAttribute('data-share-url');
     const title = element.title || '';
     const ariaLabel = element.getAttribute('aria-label') || '';
 
-    // 链接按钮的特征（根据 LinuxDo 实际按钮）
-    // 提示文字："将此帖子的链接复制到剪贴板"
-    const isLinkLike = dataValue === 'share' ||
-           dataValue === 'link' ||
-           className.includes('share') ||
-           className.includes('copy-link') ||
-           title.includes('将此帖子的链接复制到剪贴板') ||
-           title.includes('复制到剪贴板') ||
-           title.includes('链接') ||
-           title.toLowerCase().includes('copy') ||
-           title.toLowerCase().includes('share') ||
-           title.toLowerCase().includes('link to this') ||
-           ariaLabel.includes('链接') ||
-           ariaLabel.includes('复制') ||
-           ariaLabel.toLowerCase().includes('share') ||
-           ariaLabel.toLowerCase().includes('copy');
+    // LinuxDo/Discourse 分享按钮的关键特征（通过浏览器检查确认）：
+    // 最可靠特征: class="post-action-menu__copy-link"
+    // 次要特征: title="copy a link to this post to clipboard" 或中文版
+    const hasCopyLinkClass = className.includes('post-action-menu__copy-link') ||
+                              className.includes('copy-link');
+    const hasShareUrl = dataShareUrl !== null && dataShareUrl !== '';
+    const hasShareClass = className.includes('share');
+    const hasShareTitle = title.includes('将此帖子的链接复制到剪贴板') ||
+                          title.includes('复制到剪贴板') ||
+                          title.includes('链接') ||
+                          title.toLowerCase().includes('copy a link') ||
+                          title.toLowerCase().includes('copy') ||
+                          title.toLowerCase().includes('share');
+    const hasShareAria = ariaLabel.includes('链接') ||
+                         ariaLabel.includes('复制') ||
+                         ariaLabel.includes('分享') ||
+                         ariaLabel.toLowerCase().includes('share') ||
+                         ariaLabel.toLowerCase().includes('copy');
+
+    // 判断是否为链接/分享按钮（优先检测最可靠的特征）
+    const isLinkLike = hasCopyLinkClass || hasShareUrl || hasShareClass || hasShareTitle || hasShareAria;
 
     // 如果不像链接按钮，返回 false
     if (!isLinkLike) {
       return { isLink: false, postNumber: null };
     }
 
-    // 获取楼层号
-    const postNumber = postContainer.getAttribute('data-post-number') ||
+    // 获取楼层号 - 必须从 .topic-post 元素获取（不是 article）
+    // 因为 article[data-post-id] 没有 data-post-number，楼层号在外层 .topic-post 上
+    const topicPost = element.closest('.topic-post');
+    const postNumber = topicPost?.getAttribute('data-post-number') ||
+                       postContainer.getAttribute('data-post-number') ||
                        postContainer.querySelector('[data-post-number]')?.getAttribute('data-post-number') ||
                        '1';
 
@@ -123,23 +139,13 @@
     eventListenerAdded = true;
 
     document.addEventListener('click', (e) => {
-      // V3.5.8: 扩大匹配范围，包括 span、div 等元素
-      // LinuxDo 的按钮可能是各种元素类型
-      let target = e.target.closest('button, a, span[title], div[title]');
+      // V3.5.8: 简化检测 - 直接从点击元素向上查找 button
+      // Discourse 的按钮结构: button > svg，点击 svg 时需要找到 button
+      let target = e.target.closest('button');
 
-      // 如果没找到，尝试从点击元素向上查找带 title 的元素
+      // 如果没找到 button，也检查 a 标签
       if (!target) {
-        target = e.target.closest('[title*="链接"], [title*="复制"], [title*="copy"], [title*="share"]');
-      }
-
-      // 还没找到，检查点击元素本身或其父元素
-      if (!target && e.target.closest('.topic-post')) {
-        // 可能点击的是 SVG 图标，向上查找按钮容器
-        const postControls = e.target.closest('.post-controls, .actions');
-        if (postControls) {
-          target = e.target.closest('[class*="share"], [class*="link"]') ||
-                   e.target.parentElement?.closest('[title]');
-        }
+        target = e.target.closest('a');
       }
 
       // V3.5.3.1: 检查是否有bypass标记（用于触发原生复制链接）
@@ -149,18 +155,6 @@
       }
 
       const linkResult = isLinkButton(target);
-
-      // 调试日志
-      if (e.target.closest('.topic-post')) {
-        console.log('[LinuxDo→Obsidian] 点击检测:', {
-          clickedElement: e.target.tagName,
-          clickedClass: e.target.className,
-          foundTarget: target?.tagName,
-          targetTitle: target?.title,
-          targetClass: target?.className,
-          isLink: linkResult.isLink
-        });
-      }
 
       if (target && linkResult.isLink) {
         e.preventDefault();
@@ -218,14 +212,15 @@
       }
     }, true);
 
-    console.log('[LinuxDo→Obsidian] 链接按钮劫持已激活 (V3.5.7 - 支持评论链接按钮)');
+    console.log('[LinuxDo→Obsidian] 链接按钮劫持已激活 (V3.5.10)');
   }
 
   // V3.5.7: 触发原生复制链接功能
   function triggerOriginalCopyLink(target) {
-    // 方法1: 直接复制当前帖子/评论的链接到剪贴板
-    const postContainer = target.closest('.topic-post, article[data-post-id]');
-    const postNumber = postContainer?.getAttribute('data-post-number') || '1';
+    // 直接复制当前帖子/评论的链接到剪贴板
+    // V3.5.10: 从 .topic-post 获取楼层号
+    const topicPost = target.closest('.topic-post');
+    const postNumber = topicPost?.getAttribute('data-post-number') || '1';
 
     // 构建链接URL
     let linkUrl = window.location.href;
@@ -752,7 +747,7 @@
 
       // 单条评论模式：文件名加楼层号，避免覆盖主帖文件
       const fileName = isSingleCommentMode
-        ? `${sanitizedTitle}-评论${targetPostNumber}楼`
+        ? `${sanitizedTitle}-${targetPostNumber}楼`
         : sanitizedTitle;
 
       // 构建Obsidian URI
@@ -1173,7 +1168,7 @@
 
     pluginInitialized = true;
     currentTopicUrl = topicUrl;
-    console.log('[LinuxDo→Obsidian] 插件已加载 (V3.5.8 - 修复误触发)');
+    console.log('[LinuxDo→Obsidian] 插件已加载 (V3.5.10)');
   }
 
   // 页面加载完成后初始化

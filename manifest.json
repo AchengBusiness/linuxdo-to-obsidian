@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinuxDo to Obsidian",
-  "version": "3.5.8",
+  "version": "3.5.10",
   "description": "一键保存LinuxDo帖子+评论到Obsidian或飞书多维表格（支持双保存）",
   "permissions": [
     "storage",
