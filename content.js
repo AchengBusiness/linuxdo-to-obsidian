@@ -72,18 +72,22 @@
     const title = element.title || '';
     const ariaLabel = element.getAttribute('aria-label') || '';
 
-    // 链接按钮的特征
+    // 链接按钮的特征（根据 LinuxDo 实际按钮）
+    // 提示文字："将此帖子的链接复制到剪贴板"
     const isLinkLike = dataValue === 'share' ||
            dataValue === 'link' ||
            className.includes('share') ||
-           text.trim() === '链接' ||
-           text.trim() === 'Link' ||
-           text.trim() === 'Share' ||
+           className.includes('copy-link') ||
+           title.includes('将此帖子的链接复制到剪贴板') ||
+           title.includes('复制到剪贴板') ||
            title.includes('链接') ||
+           title.toLowerCase().includes('copy') ||
            title.toLowerCase().includes('share') ||
            title.toLowerCase().includes('link to this') ||
            ariaLabel.includes('链接') ||
-           ariaLabel.toLowerCase().includes('share');
+           ariaLabel.includes('复制') ||
+           ariaLabel.toLowerCase().includes('share') ||
+           ariaLabel.toLowerCase().includes('copy');
 
     // 如果不像链接按钮，返回 false
     if (!isLinkLike) {
