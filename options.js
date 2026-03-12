@@ -414,6 +414,14 @@ function showStatus(message, type) {
 document.addEventListener('DOMContentLoaded', () => {
   loadOptions();
 
+  // 绑定折叠/展开事件（使用事件监听器，避免 Chrome 扩展 CSP 限制）
+  document.querySelectorAll('.section-header[data-section]').forEach(header => {
+    header.addEventListener('click', () => {
+      const sectionId = header.getAttribute('data-section');
+      toggleSection(sectionId);
+    });
+  });
+
   // 表单提交
   document.getElementById('optionsForm').addEventListener('submit', saveOptions);
 
@@ -471,6 +479,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
-// 将 toggleSection 暴露到全局作用域（供 onclick 使用）
-window.toggleSection = toggleSection;
