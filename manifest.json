@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Discourse Saver",
-  "version": "3.6.0",
-  "description": "一键保存Discourse论坛帖子+评论到Obsidian或飞书多维表格（支持LinuxDo及所有Discourse论坛）",
+  "version": "4.0.2",
+  "description": "一键保存Discourse论坛帖子+评论到Obsidian、飞书多维表格或Notion（支持LinuxDo及所有Discourse论坛）",
   "permissions": [
     "storage",
     "activeTab",
@@ -11,6 +11,7 @@
   "host_permissions": [
     "https://open.feishu.cn/*",
     "https://open.larksuite.com/*",
+    "https://api.notion.com/*",
     "<all_urls>"
   ],
   "background": {

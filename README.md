@@ -1,8 +1,8 @@
-# Discourse Saver V3.6.0
+# Discourse Saver V4.0.2
 
-一键保存 **任意 Discourse 论坛**（包括 LinuxDo）帖子+评论到 **Obsidian** 或 **飞书多维表格**。
+一键保存 **任意 Discourse 论坛**（包括 LinuxDo）帖子+评论到 **Obsidian**、**飞书多维表格** 或 **Notion**。
 
-> **V3.6.0 新功能**：支持所有 Discourse 论坛 + 图片 Base64 嵌入 + 自定义站点管理
+> **V4.0.2 修复**：修复帖子内容换行丢失问题 + 改进 Notion 格式渲染
 
 ## 浏览器支持
 
@@ -130,10 +130,13 @@
 
 ### 文件命名规则
 
-| 保存方式 | Obsidian 文件名 | 飞书标题 |
-|---------|----------------|---------|
-| 主帖 | `标题.md` | `标题` |
-| 评论（X楼） | `标题-X楼.md` | `标题 [X楼]` |
+**Obsidian 文件名：**
+- 主帖：标题.md
+- 评论：标题-X楼.md（X 为楼层号）
+
+**飞书标题：**
+- 主帖：标题
+- 评论：标题 [X楼]
 
 ---
 
@@ -164,6 +167,7 @@
 |-------|------|
 | 保存到 Obsidian | 启用 Obsidian 保存 |
 | 保存到飞书多维表格 | 启用飞书同步 |
+| 保存到 Notion Database | 启用 Notion 同步（V4.0.1）|
 
 ### Obsidian 设置
 
@@ -183,6 +187,27 @@
 | app_token | 多维表格 token（URL 中 `/base/` 后面的字符串） |
 | table_id | 数据表 ID（URL 中 `?table=` 后面的字符串） |
 | 上传 MD 附件 | 将完整内容作为 MD 文件附件上传 |
+
+### Notion 设置（V4.0.2）
+
+| 配置项 | 说明 |
+|-------|------|
+| Integration Token | 以 `secret_` 开头的 Notion Integration 密钥 |
+| Database ID | 32 位十六进制 Database 标识符 |
+| 属性映射 | 配置 Database 属性名称（默认中文：标题、链接、作者等） |
+
+**Database 属性要求：**
+
+| 属性名 | 类型 | 必填 |
+|-------|------|------|
+| 标题 | Title | ✅ |
+| 链接 | URL | ✅ |
+| 作者 | Rich Text | |
+| 分类 | Rich Text 或 Select | |
+| 保存日期 | Date | |
+| 评论数 | Number | |
+
+> **详细配置教程**：请参考 [NOTION-GUIDE.html](NOTION-GUIDE.html)
 
 ### 内容设置
 
@@ -287,14 +312,15 @@
 
 ### 第五步：获取表格参数
 
-从多维表格的URL中提取 `app_token` 和 `table_id`：
+从多维表格的URL中提取 app_token 和 table_id：
 
-```
-https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=...
-                    └─────────────────────────────┘      └───────────────┘
-                            app_token                        table_id
-                      （整个多维表格文档的标识）         （当前数据表的标识）
-```
+**URL 格式示例：**
+
+> https://feishu.cn/base/**XxXxXxXxXx**?table=**tblYyYyYy**&view=...
+
+**提取方法：**
+- **app_token**：/base/ 后面到 ? 之前的部分（如 XxXxXxXxXx）
+- **table_id**：?table= 后面的部分（如 tblYyYyYy，以 tbl 开头）
 
 > **重要说明**：
 >
@@ -343,14 +369,14 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 ### 文件命名
 
-| 类型 | 命名格式 |
-|-----|---------|
-| 主帖 | `标题.md` |
-| 评论 | `标题-X楼.md` |
+- **主帖**：标题.md
+- **评论**：标题-X楼.md（X 为楼层号）
 
 ### 笔记结构
 
-```markdown
+保存的笔记包含 YAML frontmatter 元数据和正文内容：
+
+```text
 ---
 来源: https://linux.do/t/topic/847468
 标题: 秘密花园园丁邀请函
@@ -364,6 +390,8 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 [帖子正文内容...]
 
+<span style="color: red;">颜色会保留</span>
+
 ---
 
 ## 评论区（共100条）
@@ -374,8 +402,12 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 ### 2楼 - Bob
 
-学习了！
+<span style="color: blue;">颜色也会保留</span>
 ```
+
+**说明：**
+- 帖子中的 HTML 颜色样式会被保留
+- 评论区按楼层显示（如果启用保存评论）
 
 ---
 
@@ -445,9 +477,53 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 所有基于 Chromium 的浏览器（Chrome、Edge、Brave、Opera）都支持本扩展。
 
+### Q9: Notion 保存失败？
+
+**A:** 请按以下顺序检查：
+1. Integration Token 是否以 `secret_` 开头
+2. Database ID 是否为 32 位十六进制字符
+3. 是否已将 Integration 连接到 Database（最常见原因！）
+4. 属性映射是否与 Database 中的属性名完全一致（区分大小写）
+
+详见 [NOTION-GUIDE.html](NOTION-GUIDE.html)
+
+### Q10: Notion 和 Obsidian/飞书冲突吗？
+
+**A:** 不冲突！三个保存目标完全独立。你可以同时启用所有平台，一键保存到多个地方。任何一个平台保存失败不会影响其他平台。
+
 ---
 
 ## 更新日志
+
+### v4.0.2 (2026-03-12)
+
+- **修复**：帖子内容换行丢失问题
+  - 修复 `<br>` 标签在 TurndownService 转换时不生成换行符的问题
+  - 修复带颜色样式的内容（如 `<span style="color:red">` ）内部换行丢失
+  - 评论区内容换行同步修复
+- **修复**：代码块换行丢失问题
+  - 修复 LinuxDo 代码块结构 `<pre><div>按钮</div><code>` 检测失败
+  - 修复 `<pre><code>` 代码块内 `<br>` 标签不转换为换行符
+  - 导出到 Obsidian 后代码块可正常显示和复制
+- **改进**：Notion 功能增强
+  - 新增图片支持（`![](url)` 转为 Notion 图片块）
+  - 新增无序列表（`-`、`*`）、有序列表（`1.`）、分割线支持
+  - 属性映射默认值改为中文（标题、链接、作者、分类、保存日期、评论数）
+  - 测试连接增加严格的属性类型验证（Title/URL/Rich Text/Date/Number）
+  - 详细的错误提示（属性不存在、类型不匹配）
+- **修复**：保存目标添加 Notion 选项（之前遗漏）
+- **优化**：评论区折叠/非折叠模式均正常显示换行
+
+### v4.0.1 (2026-03-12)
+
+- **新增**：Notion Database 保存功能
+  - 支持 Notion Integration Token 认证
+  - 自定义属性映射（支持中文属性名）
+  - 帖子内容保存到 Notion Page 正文
+  - 详细的错误提示和配置验证
+- **新增**：[Notion 配置指南 HTML 版](NOTION-GUIDE.html)
+- **优化**：三平台完全隔离（Obsidian、飞书、Notion 互不影响）
+- **优化**：保存目标验证更新（支持三选一或多选）
 
 ### v3.6.0 (2026-03-12)
 
@@ -568,22 +644,22 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 ### 文件结构
 
-```
-linuxdo-to-obsidian/
-├── manifest.json           # 插件配置（Manifest V3）
-├── detector.js             # 站点检测器（V3.6.0 新增）
-├── content.js              # 内容脚本（劫持+保存）
-├── background.js           # 后台脚本（飞书API+脚本注入）
-├── options.html            # 配置页面
-├── options.js              # 配置逻辑
-├── lib/
-│   └── turndown.min.js     # HTML→Markdown
-├── icons/
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md
-```
+插件目录 linuxdo-to-obsidian 包含以下文件：
+
+**根目录文件：**
+- manifest.json - 插件配置（Manifest V3）
+- detector.js - 站点检测器（V3.6.0 新增）
+- content.js - 内容脚本（劫持+保存）
+- background.js - 后台脚本（飞书API+脚本注入）
+- options.html - 配置页面
+- options.js - 配置逻辑
+- README.md - 说明文档
+
+**lib 目录：**
+- turndown.min.js - HTML 转 Markdown 库
+
+**icons 目录：**
+- icon16.png / icon48.png / icon128.png - 扩展图标
 
 ### 权限说明
 
@@ -607,5 +683,6 @@ MIT License
 - [LinuxDo](https://linux.do)
 - [Obsidian](https://obsidian.md)
 - [飞书开放平台](https://open.feishu.cn)
+- [Notion](https://www.notion.so)
 - [Turndown](https://github.com/mixmark-io/turndown)
 - [Advanced URI](https://github.com/Vinzent03/obsidian-advanced-uri)

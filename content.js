@@ -1,8 +1,9 @@
-// Discourse Saver - Content Script V3.6.0
+// Discourse Saver - Content Script V4.0.2
 // 劫持链接按钮，保存帖子+评论到Obsidian（保留颜色样式）
 // V3.5: 支持同时保存到飞书多维表格（带MD附件）
 // V3.5.1: 单击保存到Obsidian，双击触发原生复制链接
 // V3.5.2: 支持飞书国内版和Lark国际版
+// V4.0.1: 新增 Notion Database 保存功能
 // V3.5.3: 支持评论区链接按钮 - 点击评论链接保存主帖+该评论
 // V3.5.4: 修复双击检测竞态条件 + 改进原生复制链接触发机制
 // V3.5.5: 修复飞书记录重复问题（搜索逻辑改进）
@@ -15,6 +16,7 @@
 // V3.5.12: 飞书字段验证功能
 // V3.5.13: 增强错误提示 + UI文字更新 + Mac快捷键支持
 // V3.6.0: 支持所有 Discourse 论坛 + 自定义站点管理 + 图片 Base64 嵌入
+// V4.0.2: 修复换行丢失问题 - <br>标签现在正确转换为换行符
 //
 // 功能说明：
 // - 点击主帖链接按钮：保存主帖（如开启"保存评论"则包含所有评论）
@@ -55,7 +57,19 @@
     feishuAppSecret: '',
     feishuAppToken: '',
     feishuTableId: '',
-    feishuUploadAttachment: false
+    feishuUploadAttachment: false,
+
+    // V4.0.1: Notion 设置
+    // V4.0.2: 默认属性名改为中文
+    saveToNotion: false,
+    notionToken: '',
+    notionDatabaseId: '',
+    notionPropTitle: '标题',
+    notionPropUrl: '链接',
+    notionPropAuthor: '作者',
+    notionPropCategory: '分类',
+    notionPropSavedDate: '保存日期',
+    notionPropCommentCount: '评论数'
   };
 
   // 检查是否在帖子页面
@@ -428,6 +442,7 @@
     });
 
     // 规则1：保留有style属性的元素（保留颜色）
+    // V4.0.2: 修复内部<br>标签不换行的问题
     turndownService.addRule('preserveStyledElements', {
       filter: (node) => {
         return (node.nodeName === 'SPAN' || node.nodeName === 'DIV' || node.nodeName === 'P') &&
@@ -435,8 +450,19 @@
                node.getAttribute('style').includes('color');
       },
       replacement: (content, node) => {
-        return node.outerHTML;
+        // 获取HTML并将<br>转换为换行符
+        let html = node.outerHTML;
+        // 将<br>、<br/>、<br />转换为换行符
+        html = html.replace(/<br\s*\/?>/gi, '\n');
+        return html;
       }
+    });
+
+    // 规则1.5：处理<br>标签，确保换行符被保留
+    // V4.0.2: 新增，修复换行丢失问题
+    turndownService.addRule('lineBreaks', {
+      filter: 'br',
+      replacement: () => '\n'
     });
 
     // 规则2：保留表格HTML
@@ -467,16 +493,55 @@
     });
 
     // 规则3：代码块保留语言标识
+    // V4.0.2: 修复代码块内换行丢失问题
+    // V4.0.2: 修复 LinuxDo 代码块结构（pre > div.按钮 + code）
     turndownService.addRule('codeBlocks', {
       filter: (node) => {
-        return node.nodeName === 'PRE' && node.firstChild && node.firstChild.nodeName === 'CODE';
+        // LinuxDo 的代码块结构：<pre><div>按钮</div><code>代码</code></pre>
+        // 或者标准结构：<pre><code>代码</code></pre>
+        // 只要 pre 里包含 code 就匹配
+        return node.nodeName === 'PRE' && node.querySelector('code');
       },
       replacement: (content, node) => {
-        const codeNode = node.firstChild;
-        const code = codeNode.textContent;
-        const langMatch = codeNode.className.match(/lang-(\w+)/);
-        const lang = langMatch ? langMatch[1] : '';
+        // 查找 code 元素（可能不是 firstChild）
+        const codeNode = node.querySelector('code');
+        if (!codeNode) return content;
+
+        // V4.0.2: 先将 <br> 标签转换为换行符，再获取文本内容
+        // 克隆节点以避免修改原始 DOM
+        const clonedCode = codeNode.cloneNode(true);
+        // 将所有 <br> 替换为换行符文本节点
+        const brTags = clonedCode.querySelectorAll('br');
+        brTags.forEach(br => {
+          br.replaceWith('\n');
+        });
+        const code = clonedCode.textContent;
+
+        // 获取语言标识（从 class 或 data-code-wrap 属性）
+        const langFromClass = codeNode.className.match(/lang-(\w+)/);
+        const langFromData = node.getAttribute('data-code-wrap');
+        const lang = langFromClass ? langFromClass[1] : (langFromData || '');
+
         return '\n\n```' + lang + '\n' + code + '\n```\n\n';
+      }
+    });
+
+    // 规则3.5：处理独立的 <pre> 标签（不包含 <code>）
+    // V4.0.2: 新增，确保所有预格式文本的换行都正确
+    turndownService.addRule('preBlocks', {
+      filter: (node) => {
+        // 只匹配不包含 code 的 pre 标签
+        return node.nodeName === 'PRE' && !node.querySelector('code');
+      },
+      replacement: (content, node) => {
+        // 克隆节点处理 <br> 标签
+        const clonedPre = node.cloneNode(true);
+        const brTags = clonedPre.querySelectorAll('br');
+        brTags.forEach(br => {
+          br.replaceWith('\n');
+        });
+        const code = clonedPre.textContent;
+        return '\n\n```\n' + code + '\n```\n\n';
       }
     });
 
@@ -1115,8 +1180,73 @@
         });
       }
 
-      // V3.5: 如果两个保存目标都没有启用，提示用户
-      if (!shouldSaveToObsidian && !feishuConfigComplete) {
+      // V4.0.1: 检查 Notion 配置是否完整，如果完整则同步保存到 Notion
+      const notionConfigComplete = config.saveToNotion &&
+        config.notionToken &&
+        config.notionDatabaseId;
+
+      if (notionConfigComplete) {
+        console.log('[Discourse Saver→Notion] 检测到 Notion 配置，开始同步...');
+
+        // 清理URL，移除查询参数和锚点
+        let cleanNotionUrl = url.replace(/#.*$/, '').replace(/\?.*$/, '');
+
+        // 评论书签保存时，URL和标题加上楼层标识
+        let notionUrl = cleanNotionUrl;
+        let notionTitle = title;
+        if (isSingleCommentMode) {
+          const match = cleanNotionUrl.match(/^(.*\/t\/[^/]+\/\d+)(\/\d+)?$/);
+          if (match) {
+            cleanNotionUrl = match[1];
+          }
+          notionUrl = `${cleanNotionUrl}/${targetPostNumber}`;
+          notionTitle = `${title} [${targetPostNumber}楼]`;
+        }
+
+        // 获取分类信息
+        let category = '';
+        const categoryBadge = document.querySelector('.topic-category .badge-category__name');
+        if (categoryBadge) {
+          category = categoryBadge.textContent.trim();
+        }
+
+        chrome.runtime.sendMessage({
+          action: 'saveToNotion',
+          config: {
+            notionToken: config.notionToken,
+            notionDatabaseId: config.notionDatabaseId,
+            notionPropTitle: config.notionPropTitle || 'Title',
+            notionPropUrl: config.notionPropUrl || 'URL',
+            notionPropAuthor: config.notionPropAuthor || 'Author',
+            notionPropCategory: config.notionPropCategory || 'Category',
+            notionPropSavedDate: config.notionPropSavedDate || 'Saved Date',
+            notionPropCommentCount: config.notionPropCommentCount || 'Comments'
+          },
+          postData: {
+            title: notionTitle,
+            url: notionUrl,
+            author: author,
+            content: markdown,
+            category: category,
+            commentCount: comments.length
+          }
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('[Discourse Saver→Notion] 发送消息失败:', chrome.runtime.lastError);
+            return;
+          }
+
+          if (response && response.success) {
+            showNotification('Notion 保存成功', 'success');
+          } else if (response) {
+            console.error('[Discourse Saver→Notion] 保存失败:', response.error);
+            showNotification('Notion 保存失败: ' + response.error, 'error');
+          }
+        });
+      }
+
+      // V4.0.1: 如果所有保存目标都没有启用，提示用户
+      if (!shouldSaveToObsidian && !feishuConfigComplete && !notionConfigComplete) {
         showNotification('请在设置中至少启用一个保存目标', 'warning');
       }
 

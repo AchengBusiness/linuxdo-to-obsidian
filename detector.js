@@ -1,4 +1,4 @@
-// Discourse Saver - 站点检测器 V3.6.0
+// Discourse Saver - 站点检测器 V4.0.2
 // 自动检测 Discourse 论坛并加载主脚本
 
 (function() {

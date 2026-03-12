@@ -103,6 +103,11 @@
       color: #fff;
     }
 
+    .badge-notion {
+      background: #000000;
+      color: #fff;
+    }
+
     .badge-new {
       background: #059669;
       color: #fff;
@@ -535,10 +540,15 @@
 
             <div class="checkbox-row">
               <input type="checkbox" id="saveToFeishu">
-              <label for="saveToFeishu">保存到飞书多维表格 <span class="badge badge-new">新</span></label>
+              <label for="saveToFeishu">保存到飞书多维表格</label>
             </div>
 
-            <div class="help-text">可以同时保存到两个地方</div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="saveToNotion">
+              <label for="saveToNotion">保存到 Notion Database <span class="badge badge-new">新</span></label>
+            </div>
+
+            <div class="help-text">可以同时保存到多个地方</div>
           </div>
         </div>
 
@@ -639,6 +649,86 @@
                   <strong>3. 多维表格字段：</strong><br>
                   标题（文本）、链接（超链接）、作者（文本）、保存时间（日期）、评论数（数字）<br>
                   如勾选上传附件：附件（附件）；否则：正文（文本）
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notion 设置 (V4.0.1 新增) -->
+        <div class="section" data-section="notionSettings" id="notionSection">
+          <div class="section-header" data-section="notionSettings">
+            <div class="section-header-left">
+              <span class="badge badge-notion">Notion</span>
+              <span class="section-title">Notion Database 设置 <span class="badge badge-new">新</span></span>
+            </div>
+            <span class="collapse-icon expanded" id="icon-notionSettings">▶</span>
+          </div>
+          <div class="section-content expanded" id="content-notionSettings">
+            <div id="notionOptions">
+              <div class="form-group">
+                <label>Integration Token <span style="color: #ef4444;">*</span></label>
+                <input type="password" id="notionToken" placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                <div class="help-text">
+                  在 <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a> 创建获取
+                  · <a href="NOTION-GUIDE.html" target="_blank">详细教程</a>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Database ID <span style="color: #ef4444;">*</span></label>
+                <input type="text" id="notionDatabaseId" placeholder="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4">
+                <div class="help-text">从 Database 链接中复制，格式为 32 位字符（可含连字符）</div>
+              </div>
+
+              <div class="form-group">
+                <label>属性映射配置</label>
+                <div class="help-text" style="margin-bottom: 8px;">属性名需与 Notion Database 中的列名完全匹配（区分大小写）</div>
+                <div style="background: #f9fafb; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px;">
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280;">标题属性名 <span style="color: #ef4444;">*</span> <span style="color: #9ca3af; font-weight: normal;">（类型：Title）</span></label>
+                    <input type="text" id="notionPropTitle" value="标题" placeholder="标题" style="padding: 6px 10px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280;">链接属性名 <span style="color: #ef4444;">*</span> <span style="color: #9ca3af; font-weight: normal;">（类型：URL）</span></label>
+                    <input type="text" id="notionPropUrl" value="链接" placeholder="链接" style="padding: 6px 10px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280;">作者属性名 <span style="color: #9ca3af; font-weight: normal;">（类型：Rich Text）</span></label>
+                    <input type="text" id="notionPropAuthor" value="作者" placeholder="作者" style="padding: 6px 10px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280;">分类属性名 <span style="color: #9ca3af; font-weight: normal;">（类型：Rich Text 或 Select）</span></label>
+                    <input type="text" id="notionPropCategory" value="分类" placeholder="分类" style="padding: 6px 10px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; color: #6b7280;">保存日期属性名 <span style="color: #9ca3af; font-weight: normal;">（类型：Date）</span></label>
+                    <input type="text" id="notionPropSavedDate" value="保存日期" placeholder="保存日期" style="padding: 6px 10px;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-size: 12px; color: #6b7280;">评论数属性名 <span style="color: #9ca3af; font-weight: normal;">（类型：Number）</span></label>
+                    <input type="text" id="notionPropCommentCount" value="评论数" placeholder="评论数" style="padding: 6px 10px;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="inline-row" style="margin-top: 12px;">
+                <button type="button" class="btn-test" id="testNotionBtn">测试连接</button>
+              </div>
+
+              <div class="tip-box" style="margin-top: 16px; background: #f0f9ff; border-left-color: #0ea5e9;">
+                <p>
+                  <strong>配置步骤：</strong><br>
+                  1. 创建 <a href="https://www.notion.so/my-integrations" target="_blank">Internal Integration</a> 并复制 Token<br>
+                  2. 创建 Database 并添加以下属性列（名称和类型必须匹配）：<br>
+                  &nbsp;&nbsp;&nbsp;• 标题（Title 类型）- 必填<br>
+                  &nbsp;&nbsp;&nbsp;• 链接（URL 类型）- 必填<br>
+                  &nbsp;&nbsp;&nbsp;• 作者（Rich Text 类型）<br>
+                  &nbsp;&nbsp;&nbsp;• 分类（Rich Text 或 Select 类型）<br>
+                  &nbsp;&nbsp;&nbsp;• 保存日期（Date 类型）<br>
+                  &nbsp;&nbsp;&nbsp;• 评论数（Number 类型）<br>
+                  3. 在 Database 页面点击「...」→「Connections」→ 添加你的 Integration<br>
+                  4. 从 Database 链接中复制 ID 并填入上方
                 </p>
               </div>
             </div>

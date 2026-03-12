@@ -1,8 +1,10 @@
-// Discourse Saver - Background Script V3.6.0
-// 处理飞书API请求（解决CORS问题）+ 动态脚本注入
+// Discourse Saver - Background Script V4.0.2
+// 处理飞书/Notion API请求（解决CORS问题）+ 动态脚本注入
 // V3.5: 支持上传MD文件作为附件
 // V3.5.2: 支持飞书国内版和Lark国际版
 // V3.5.3: 配合 content.js 支持评论书签功能
+// V4.0.1: 新增 Notion Database 保存功能
+// V4.0.2: 修复 Notion 内容换行问题
 // V3.5.4: 版本同步
 // V3.5.5: 修复飞书记录搜索 - 改用标题搜索（超链接字段contains不搜索URL）
 // V3.5.12: 增强飞书测试连接 - 验证必需字段是否存在及类型是否正确
@@ -137,6 +139,84 @@ const FEISHU_ERROR_CODES = {
     hint: '飞书服务器可能正在维护，请稍后再试'
   }
 };
+
+// ============================================
+// Notion API 相关配置 (V4.0.1 新增)
+// ============================================
+
+// Notion API 版本
+const NOTION_API_VERSION = '2022-06-28';
+
+// Notion 错误码映射 - 提供友好的中文提示
+const NOTION_ERROR_CODES = {
+  400: {
+    msg: '请求参数错误',
+    hint: '请检查属性映射是否与 Database 中的列名完全匹配（区分大小写）'
+  },
+  401: {
+    msg: 'Integration Token 无效',
+    hint: 'Token 错误或已过期，请在 Notion Settings → Integrations 中重新获取\n\n' +
+          '📌 Token 格式：secret_xxxxxxxxxxxxxxxx\n' +
+          '⚠️ 注意：Token 必须以 secret_ 开头'
+  },
+  403: {
+    msg: '无权限访问该 Database',
+    hint: '请在 Notion 中将 Integration 连接到 Database：\n\n' +
+          '1. 打开目标 Database 页面\n' +
+          '2. 点击右上角「...」菜单\n' +
+          '3. 选择「Connections」→「Connect to」\n' +
+          '4. 选择你创建的 Integration'
+  },
+  404: {
+    msg: 'Database 不存在',
+    hint: 'Database ID 错误，请重新从 URL 中复制：\n\n' +
+          '📌 提取方法：\n' +
+          '1. 打开 Database 页面\n' +
+          '2. 点击「Share」→「Copy link」\n' +
+          '3. 从链接中提取 32 位 ID\n\n' +
+          '示例：notion.so/xxxxx?v=yyy\n' +
+          'Database ID 是中间的 32 位字符'
+  },
+  409: {
+    msg: '数据冲突',
+    hint: '可能存在重复记录，请稍后重试'
+  },
+  429: {
+    msg: '请求过于频繁',
+    hint: 'Notion API 有速率限制（每秒 3 次请求），请稍后再试'
+  },
+  500: {
+    msg: 'Notion 服务器错误',
+    hint: 'Notion 服务暂时不可用，请稍后再试'
+  },
+  502: {
+    msg: 'Notion 网关错误',
+    hint: 'Notion 服务暂时不可用，请稍后再试'
+  },
+  503: {
+    msg: 'Notion 服务不可用',
+    hint: 'Notion 正在维护或过载，请稍后再试'
+  }
+};
+
+// 解析 Notion 错误，返回友好提示
+function parseNotionError(status, errorData, context) {
+  const errorInfo = NOTION_ERROR_CODES[status];
+  const apiMessage = errorData?.message || '';
+  const apiCode = errorData?.code || '';
+
+  if (errorInfo) {
+    let msg = `${context}失败：${errorInfo.msg}`;
+    if (apiMessage) {
+      msg += `\n\n❌ Notion 返回：${apiMessage}`;
+    }
+    msg += `\n\n💡 解决方法：${errorInfo.hint}`;
+    return msg;
+  }
+
+  // 未知错误
+  return `${context}失败：HTTP ${status}\n\n❌ Notion 返回：${apiMessage || '未知错误'}\n错误码：${apiCode}`;
+}
 
 // HTTP 错误码映射
 const HTTP_ERROR_HINTS = {
@@ -635,6 +715,430 @@ async function updateFeishuRecord(config, recordId, postData) {
   return data.data.record;
 }
 
+// ============================================
+// Notion API 功能函数 (V4.0.1 新增)
+// ============================================
+
+// 验证 Notion 配置
+function validateNotionConfig(config) {
+  const errors = [];
+
+  // 检查 Token
+  if (!config.notionToken || !config.notionToken.trim()) {
+    errors.push('Integration Token 不能为空');
+  } else if (!config.notionToken.trim().startsWith('secret_')) {
+    errors.push('Integration Token 格式错误（应以 secret_ 开头）');
+  } else if (config.notionToken.trim().length < 20) {
+    errors.push('Integration Token 长度不正确');
+  }
+
+  // 检查 Database ID
+  if (!config.notionDatabaseId || !config.notionDatabaseId.trim()) {
+    errors.push('Database ID 不能为空');
+  } else {
+    // 移除可能的连字符，验证是否为 32 位 hex
+    const cleanId = config.notionDatabaseId.replace(/-/g, '').trim();
+    if (!/^[a-f0-9]{32}$/i.test(cleanId)) {
+      errors.push('Database ID 格式错误（应为 32 位十六进制字符，可含连字符）');
+    }
+  }
+
+  // 检查必填属性映射
+  const requiredProps = [
+    { key: 'notionPropTitle', name: '标题属性名' },
+    { key: 'notionPropUrl', name: '链接属性名' }
+  ];
+
+  for (const prop of requiredProps) {
+    if (!config[prop.key] || !config[prop.key].trim()) {
+      errors.push(`${prop.name} 不能为空`);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+// 格式化 Database ID（移除连字符）
+function formatNotionDatabaseId(id) {
+  return id.replace(/-/g, '').trim();
+}
+
+// 构建 Notion Page 数据
+function buildNotionPageData(postData, config) {
+  const properties = {};
+
+  // Title (标题) - Notion 的 title 类型
+  if (config.notionPropTitle) {
+    properties[config.notionPropTitle] = {
+      title: [{
+        text: { content: (postData.title || '未命名帖子').substring(0, 2000) }
+      }]
+    };
+  }
+
+  // URL (链接) - Notion 的 url 类型
+  if (config.notionPropUrl && postData.url) {
+    properties[config.notionPropUrl] = {
+      url: postData.url
+    };
+  }
+
+  // Author (作者) - rich_text 类型
+  if (config.notionPropAuthor && postData.author) {
+    properties[config.notionPropAuthor] = {
+      rich_text: [{
+        text: { content: postData.author.substring(0, 2000) }
+      }]
+    };
+  }
+
+  // Category (分类) - rich_text 类型
+  if (config.notionPropCategory && postData.category) {
+    properties[config.notionPropCategory] = {
+      rich_text: [{
+        text: { content: postData.category.substring(0, 2000) }
+      }]
+    };
+  }
+
+  // Saved Date (保存日期) - date 类型
+  if (config.notionPropSavedDate) {
+    properties[config.notionPropSavedDate] = {
+      date: {
+        start: new Date().toISOString()
+      }
+    };
+  }
+
+  // Comment Count (评论数) - number 类型
+  if (config.notionPropCommentCount && postData.commentCount !== undefined) {
+    properties[config.notionPropCommentCount] = {
+      number: parseInt(postData.commentCount) || 0
+    };
+  }
+
+  // 构建 Page 内容 (children blocks)
+  const children = [];
+
+  // 添加内容
+  // V4.0.2: 改进换行处理，确保单换行也能正确显示
+  if (postData.content) {
+    // 先按双换行拆分成段落块，再按单换行拆分成行
+    // 这样确保所有换行都能在 Notion 中正确显示
+    const paragraphs = postData.content.split('\n\n');
+    let blockCount = 0;
+    const maxBlocks = 100; // Notion 限制 100 个 blocks
+
+    for (const para of paragraphs) {
+      if (blockCount >= maxBlocks) break;
+
+      // 按单换行拆分每个段落块
+      const lines = para.split('\n');
+
+      for (const line of lines) {
+        if (blockCount >= maxBlocks) break;
+
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue; // 跳过空行
+
+        // 检查是否是标题（以 # 开头）
+        if (trimmedLine.startsWith('# ')) {
+          children.push({
+            object: 'block',
+            type: 'heading_1',
+            heading_1: {
+              rich_text: [{
+                text: { content: trimmedLine.substring(2).substring(0, 2000) }
+              }]
+            }
+          });
+        } else if (trimmedLine.startsWith('## ')) {
+          children.push({
+            object: 'block',
+            type: 'heading_2',
+            heading_2: {
+              rich_text: [{
+                text: { content: trimmedLine.substring(3).substring(0, 2000) }
+              }]
+            }
+          });
+        } else if (trimmedLine.startsWith('### ')) {
+          children.push({
+            object: 'block',
+            type: 'heading_3',
+            heading_3: {
+              rich_text: [{
+                text: { content: trimmedLine.substring(4).substring(0, 2000) }
+              }]
+            }
+          });
+        } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+          // V4.0.2: 支持无序列表
+          children.push({
+            object: 'block',
+            type: 'bulleted_list_item',
+            bulleted_list_item: {
+              rich_text: [{
+                text: { content: trimmedLine.substring(2).substring(0, 2000) }
+              }]
+            }
+          });
+        } else if (/^\d+\.\s/.test(trimmedLine)) {
+          // V4.0.2: 支持有序列表
+          const listContent = trimmedLine.replace(/^\d+\.\s/, '');
+          children.push({
+            object: 'block',
+            type: 'numbered_list_item',
+            numbered_list_item: {
+              rich_text: [{
+                text: { content: listContent.substring(0, 2000) }
+              }]
+            }
+          });
+        } else if (trimmedLine === '---' || trimmedLine === '***') {
+          // V4.0.2: 支持分割线
+          children.push({
+            object: 'block',
+            type: 'divider',
+            divider: {}
+          });
+        } else if (/^!\[.*?\]\((https?:\/\/[^)]+)\)$/.test(trimmedLine)) {
+          // V4.0.2: 支持图片 ![alt](url)
+          const imgMatch = trimmedLine.match(/^!\[.*?\]\((https?:\/\/[^)]+)\)$/);
+          if (imgMatch && imgMatch[1]) {
+            children.push({
+              object: 'block',
+              type: 'image',
+              image: {
+                type: 'external',
+                external: {
+                  url: imgMatch[1]
+                }
+              }
+            });
+          }
+        } else {
+          // 普通段落（可能包含内联图片，转为链接显示）
+          // 将内联图片 ![alt](url) 转为 [alt](url) 链接文本
+          const textWithLinks = trimmedLine.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '[$1]($2)');
+          children.push({
+            object: 'block',
+            type: 'paragraph',
+            paragraph: {
+              rich_text: [{
+                text: { content: textWithLinks.substring(0, 2000) }
+              }]
+            }
+          });
+        }
+
+        blockCount++;
+      }
+    }
+  }
+
+  return { properties, children };
+}
+
+// 保存到 Notion
+async function saveToNotion(postData, config) {
+  console.log('[Discourse Saver→Notion] 开始保存...');
+  console.log('[Discourse Saver→Notion] 标题:', postData.title);
+
+  // 验证配置
+  const validation = validateNotionConfig(config);
+  if (!validation.valid) {
+    throw new Error('配置错误：\n• ' + validation.errors.join('\n• '));
+  }
+
+  const token = config.notionToken.trim();
+  const databaseId = formatNotionDatabaseId(config.notionDatabaseId);
+
+  // 构建页面数据
+  const pageData = buildNotionPageData(postData, config);
+
+  // 调用 Notion API 创建页面
+  let response;
+  try {
+    response = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Notion-Version': NOTION_API_VERSION,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        parent: { database_id: databaseId },
+        properties: pageData.properties,
+        children: pageData.children
+      })
+    });
+  } catch (fetchError) {
+    throw new Error(`网络连接失败\n\n💡 请检查网络连接后重试\n\n原始错误：${fetchError.message}`);
+  }
+
+  // 处理响应
+  if (!response.ok) {
+    let errorData = {};
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      // 忽略 JSON 解析错误
+    }
+    throw new Error(parseNotionError(response.status, errorData, '保存到 Notion'));
+  }
+
+  const result = await response.json();
+  console.log('[Discourse Saver→Notion] 保存成功，页面ID:', result.id);
+
+  return {
+    success: true,
+    pageId: result.id,
+    url: result.url
+  };
+}
+
+// 测试 Notion 连接
+async function testNotionConnection(config) {
+  console.log('[Discourse Saver→Notion] 测试连接...');
+
+  // 验证配置
+  const validation = validateNotionConfig(config);
+  if (!validation.valid) {
+    return {
+      success: false,
+      error: '配置验证失败：\n• ' + validation.errors.join('\n• ')
+    };
+  }
+
+  const token = config.notionToken.trim();
+  const databaseId = formatNotionDatabaseId(config.notionDatabaseId);
+
+  // 查询 Database 信息
+  let response;
+  try {
+    response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Notion-Version': NOTION_API_VERSION
+      }
+    });
+  } catch (fetchError) {
+    return {
+      success: false,
+      error: `网络连接失败：${fetchError.message}`
+    };
+  }
+
+  if (!response.ok) {
+    let errorData = {};
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      // 忽略
+    }
+    return {
+      success: false,
+      error: parseNotionError(response.status, errorData, '连接 Database')
+    };
+  }
+
+  const database = await response.json();
+  const dbTitle = database.title?.[0]?.plain_text || '未命名 Database';
+  const dbProperties = Object.keys(database.properties);
+
+  // V4.0.2: 严格验证属性映射（包括类型检查）
+  const propMappings = [
+    { configKey: 'notionPropTitle', label: '标题', required: true, expectedType: 'title' },
+    { configKey: 'notionPropUrl', label: '链接', required: true, expectedType: 'url' },
+    { configKey: 'notionPropAuthor', label: '作者', required: false, expectedType: 'rich_text' },
+    { configKey: 'notionPropCategory', label: '分类', required: false, expectedType: ['rich_text', 'select'] },
+    { configKey: 'notionPropSavedDate', label: '保存日期', required: false, expectedType: 'date' },
+    { configKey: 'notionPropCommentCount', label: '评论数', required: false, expectedType: 'number' }
+  ];
+
+  const errors = [];
+  const warnings = [];
+  const foundProps = [];
+
+  for (const mapping of propMappings) {
+    const configValue = config[mapping.configKey];
+    if (configValue && configValue.trim()) {
+      const propName = configValue.trim();
+      const propInfo = database.properties[propName];
+
+      if (!propInfo) {
+        // 属性不存在
+        if (mapping.required) {
+          errors.push(`❌ ${mapping.label}「${propName}」：Database 中不存在此属性`);
+        } else {
+          warnings.push(`⚠️ ${mapping.label}「${propName}」：Database 中不存在（可选，保存时将跳过）`);
+        }
+      } else {
+        // 属性存在，检查类型
+        const actualType = propInfo.type;
+        const expectedTypes = Array.isArray(mapping.expectedType) ? mapping.expectedType : [mapping.expectedType];
+
+        if (expectedTypes.includes(actualType)) {
+          foundProps.push(`✓ ${mapping.label}「${propName}」→ ${actualType} 类型`);
+        } else {
+          const expectedTypeStr = expectedTypes.join(' 或 ');
+          if (mapping.required) {
+            errors.push(`❌ ${mapping.label}「${propName}」：类型错误，当前是 ${actualType}，应为 ${expectedTypeStr}`);
+          } else {
+            warnings.push(`⚠️ ${mapping.label}「${propName}」：类型不匹配，当前是 ${actualType}，建议使用 ${expectedTypeStr}`);
+          }
+        }
+      }
+    } else if (mapping.required) {
+      errors.push(`❌ ${mapping.label}：未配置属性名`);
+    }
+  }
+
+  // 构建结果消息
+  const hasErrors = errors.length > 0;
+  let message = '';
+
+  if (hasErrors) {
+    message = `❌ 验证失败\n\n` +
+      `📋 Database: ${dbTitle}\n\n` +
+      `🔴 错误（必须修复）：\n${errors.join('\n')}\n`;
+    if (warnings.length > 0) {
+      message += `\n🟡 警告（可选）：\n${warnings.join('\n')}\n`;
+    }
+    message += `\n📊 Database 现有属性：\n`;
+    for (const [propName, propInfo] of Object.entries(database.properties)) {
+      message += `  • ${propName}（${propInfo.type}）\n`;
+    }
+    message += `\n💡 提示：请确保 Database 中的属性名和类型与配置完全匹配`;
+  } else {
+    message = `✅ 连接成功！\n\n` +
+      `📋 Database: ${dbTitle}\n\n` +
+      `🟢 已验证的属性：\n${foundProps.join('\n')}\n`;
+    if (warnings.length > 0) {
+      message += `\n🟡 警告（不影响保存）：\n${warnings.join('\n')}\n`;
+    }
+    message += `\n📊 Database 所有属性：\n`;
+    for (const [propName, propInfo] of Object.entries(database.properties)) {
+      message += `  • ${propName}（${propInfo.type}）\n`;
+    }
+  }
+
+  return {
+    success: !hasErrors,
+    databaseName: dbTitle,
+    properties: dbProperties,
+    foundMappings: foundProps,
+    errors: errors,
+    warnings: warnings,
+    message: message
+  };
+}
+
 // 监听来自content script的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // V3.6.0: 处理动态脚本注入请求（来自 detector.js）
@@ -899,6 +1403,45 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true;
   }
+
+  // ============================================
+  // Notion 消息处理 (V4.0.1 新增)
+  // ============================================
+
+  // 保存到 Notion
+  if (request.action === 'saveToNotion') {
+    console.log('[Discourse Saver→Notion] 收到保存请求');
+
+    (async () => {
+      try {
+        const { config, postData } = request;
+        const result = await saveToNotion(postData, config);
+        sendResponse(result);
+      } catch (error) {
+        console.error('[Discourse Saver→Notion] 保存失败:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+
+    return true;
+  }
+
+  // 测试 Notion 连接
+  if (request.action === 'testNotionConnection') {
+    console.log('[Discourse Saver→Notion] 收到测试连接请求');
+
+    (async () => {
+      try {
+        const result = await testNotionConnection(request.config);
+        sendResponse(result);
+      } catch (error) {
+        console.error('[Discourse Saver→Notion] 测试连接失败:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+
+    return true;
+  }
 });
 
 // 辅助函数：获取字段类型名称
@@ -922,4 +1465,4 @@ function getFieldTypeName(typeCode) {
   return typeNames[typeCode] || `未知类型(${typeCode})`;
 }
 
-console.log('[Discourse Saver] Background script 已加载 (V3.6.0)');
+console.log('[Discourse Saver] Background script 已加载 (V4.0.2)');

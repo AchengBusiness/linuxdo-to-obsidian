@@ -1,6 +1,8 @@
-// Discourse Saver V3.6.0 - 设置页面
-// 支持 Obsidian 和飞书多维表格
+// Discourse Saver V4.0.2 - 设置页面
+// 支持 Obsidian、飞书多维表格和 Notion
 // V3.6.0: 支持所有 Discourse 论坛 + 自定义站点管理 + 可折叠面板
+// V4.0.1: 新增 Notion Database 保存功能
+// V4.0.2: 修复换行渲染问题
 
 // 默认配置
 const DEFAULT_CONFIG = {
@@ -26,6 +28,18 @@ const DEFAULT_CONFIG = {
   feishuAppToken: '',
   feishuTableId: '',
   feishuUploadAttachment: false,
+
+  // Notion 设置 (V4.0.1)
+  // V4.0.2: 默认属性名改为中文
+  saveToNotion: false,
+  notionToken: '',
+  notionDatabaseId: '',
+  notionPropTitle: '标题',
+  notionPropUrl: '链接',
+  notionPropAuthor: '作者',
+  notionPropCategory: '分类',
+  notionPropSavedDate: '保存日期',
+  notionPropCommentCount: '评论数',
 
   // 内容设置
   addMetadata: true,
@@ -56,7 +70,7 @@ function toggleSection(sectionId) {
 
 // 展开所有面板
 function expandAllSections() {
-  const sections = ['pluginStatus', 'siteSettings', 'saveTarget', 'obsidianSettings', 'feishuSettings', 'contentSettings', 'commentSettings'];
+  const sections = ['pluginStatus', 'siteSettings', 'saveTarget', 'obsidianSettings', 'feishuSettings', 'notionSettings', 'contentSettings', 'commentSettings'];
   sections.forEach(sectionId => {
     const content = document.getElementById('content-' + sectionId);
     const icon = document.getElementById('icon-' + sectionId);
@@ -190,6 +204,17 @@ function loadOptions() {
     document.getElementById('feishuTableId').value = config.feishuTableId;
     document.getElementById('feishuUploadAttachment').checked = config.feishuUploadAttachment;
 
+    // Notion 设置 (V4.0.1)
+    document.getElementById('saveToNotion').checked = config.saveToNotion;
+    document.getElementById('notionToken').value = config.notionToken || '';
+    document.getElementById('notionDatabaseId').value = config.notionDatabaseId || '';
+    document.getElementById('notionPropTitle').value = config.notionPropTitle || 'Title';
+    document.getElementById('notionPropUrl').value = config.notionPropUrl || 'URL';
+    document.getElementById('notionPropAuthor').value = config.notionPropAuthor || 'Author';
+    document.getElementById('notionPropCategory').value = config.notionPropCategory || 'Category';
+    document.getElementById('notionPropSavedDate').value = config.notionPropSavedDate || 'Saved Date';
+    document.getElementById('notionPropCommentCount').value = config.notionPropCommentCount || 'Comments';
+
     // 内容设置
     document.getElementById('addMetadata').checked = config.addMetadata;
     document.getElementById('includeImages').checked = config.includeImages;
@@ -208,6 +233,7 @@ function loadOptions() {
     // 更新UI状态
     updateObsidianSectionVisibility(config.saveToObsidian);
     updateFeishuOptionsVisibility(config.saveToFeishu);
+    updateNotionOptionsVisibility(config.saveToNotion);
     updateCommentOptionsVisibility(config.saveComments);
     updateImageSettingsVisibility(config.embedImages);
 
@@ -234,6 +260,19 @@ function updateFeishuOptionsVisibility(enabled) {
   if (feishuOptions) {
     feishuOptions.style.opacity = enabled ? '1' : '0.5';
     feishuOptions.style.pointerEvents = enabled ? 'auto' : 'none';
+  }
+}
+
+// 更新 Notion 区域可见性 (V4.0.1)
+// V4.0.2: 修复 - 控制整个 section 而不只是内部选项
+function updateNotionOptionsVisibility(enabled) {
+  const section = document.getElementById('notionSection');
+  if (section) {
+    section.style.opacity = enabled ? '1' : '0.5';
+    const content = section.querySelector('.section-content');
+    if (content) {
+      content.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
   }
 }
 
@@ -277,6 +316,7 @@ function saveOptions(e) {
     // 保存目标
     saveToObsidian: document.getElementById('saveToObsidian').checked,
     saveToFeishu: document.getElementById('saveToFeishu').checked,
+    saveToNotion: document.getElementById('saveToNotion').checked,
 
     // Obsidian 设置
     vaultName: document.getElementById('vaultName').value.trim(),
@@ -290,6 +330,16 @@ function saveOptions(e) {
     feishuAppToken: document.getElementById('feishuAppToken').value.trim(),
     feishuTableId: document.getElementById('feishuTableId').value.trim(),
     feishuUploadAttachment: document.getElementById('feishuUploadAttachment').checked,
+
+    // Notion 设置 (V4.0.1)
+    notionToken: document.getElementById('notionToken').value.trim(),
+    notionDatabaseId: document.getElementById('notionDatabaseId').value.trim(),
+    notionPropTitle: document.getElementById('notionPropTitle').value.trim() || 'Title',
+    notionPropUrl: document.getElementById('notionPropUrl').value.trim() || 'URL',
+    notionPropAuthor: document.getElementById('notionPropAuthor').value.trim() || 'Author',
+    notionPropCategory: document.getElementById('notionPropCategory').value.trim() || 'Category',
+    notionPropSavedDate: document.getElementById('notionPropSavedDate').value.trim() || 'Saved Date',
+    notionPropCommentCount: document.getElementById('notionPropCommentCount').value.trim() || 'Comments',
 
     // 内容设置
     addMetadata: document.getElementById('addMetadata').checked,
@@ -308,7 +358,7 @@ function saveOptions(e) {
   };
 
   // 验证：插件启用时至少选择一个保存目标
-  if (config.pluginEnabled && !config.saveToObsidian && !config.saveToFeishu) {
+  if (config.pluginEnabled && !config.saveToObsidian && !config.saveToFeishu && !config.saveToNotion) {
     showStatus('请至少选择一个保存目标', 'error');
     return;
   }
@@ -317,6 +367,32 @@ function saveOptions(e) {
   if (config.saveToFeishu) {
     if (!config.feishuAppId || !config.feishuAppSecret || !config.feishuAppToken || !config.feishuTableId) {
       showStatus('请填写完整的飞书配置信息', 'error');
+      return;
+    }
+  }
+
+  // 验证：如果启用 Notion，检查必填项 (V4.0.1)
+  if (config.saveToNotion) {
+    if (!config.notionToken) {
+      showStatus('请填写 Notion Integration Token', 'error');
+      return;
+    }
+    if (!config.notionToken.startsWith('secret_')) {
+      showStatus('Integration Token 格式错误（应以 secret_ 开头）', 'error');
+      return;
+    }
+    if (!config.notionDatabaseId) {
+      showStatus('请填写 Notion Database ID', 'error');
+      return;
+    }
+    // 验证 Database ID 格式（移除连字符后应为32位十六进制）
+    const cleanId = config.notionDatabaseId.replace(/-/g, '');
+    if (!/^[a-f0-9]{32}$/i.test(cleanId)) {
+      showStatus('Database ID 格式错误（应为 32 位十六进制字符）', 'error');
+      return;
+    }
+    if (!config.notionPropTitle) {
+      showStatus('请填写标题属性名', 'error');
       return;
     }
   }
@@ -399,6 +475,74 @@ async function testFeishuConnection() {
   }
 }
 
+// 测试 Notion 连接 (V4.0.1)
+async function testNotionConnection() {
+  const btn = document.getElementById('testNotionBtn');
+  const originalText = btn.textContent;
+
+  btn.textContent = '测试中...';
+  btn.disabled = true;
+
+  const config = {
+    notionToken: document.getElementById('notionToken').value.trim(),
+    notionDatabaseId: document.getElementById('notionDatabaseId').value.trim(),
+    notionPropTitle: document.getElementById('notionPropTitle').value.trim() || 'Title',
+    notionPropUrl: document.getElementById('notionPropUrl').value.trim() || 'URL',
+    notionPropAuthor: document.getElementById('notionPropAuthor').value.trim() || 'Author',
+    notionPropCategory: document.getElementById('notionPropCategory').value.trim() || 'Category',
+    notionPropSavedDate: document.getElementById('notionPropSavedDate').value.trim() || 'Saved Date',
+    notionPropCommentCount: document.getElementById('notionPropCommentCount').value.trim() || 'Comments'
+  };
+
+  // 验证必填项
+  if (!config.notionToken) {
+    showStatus('请先填写 Integration Token', 'error');
+    btn.textContent = originalText;
+    btn.disabled = false;
+    return;
+  }
+
+  if (!config.notionToken.startsWith('secret_')) {
+    showStatus('Integration Token 格式错误（应以 secret_ 开头）', 'error');
+    btn.textContent = originalText;
+    btn.disabled = false;
+    return;
+  }
+
+  if (!config.notionDatabaseId) {
+    showStatus('请先填写 Database ID', 'error');
+    btn.textContent = originalText;
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    // 发送消息给 background script 测试连接
+    chrome.runtime.sendMessage(
+      { action: 'testNotionConnection', config },
+      (response) => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+
+        if (chrome.runtime.lastError) {
+          showStatus('测试失败: ' + chrome.runtime.lastError.message, 'error');
+          return;
+        }
+
+        if (response.success) {
+          showStatus(response.message, 'success');
+        } else {
+          showStatus('连接失败: ' + response.error, 'error');
+        }
+      }
+    );
+  } catch (error) {
+    btn.textContent = originalText;
+    btn.disabled = false;
+    showStatus('测试失败: ' + error.message, 'error');
+  }
+}
+
 // 显示状态
 function showStatus(message, type) {
   const statusElement = document.getElementById('statusMessage');
@@ -450,6 +594,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('saveToFeishu').addEventListener('change', (e) => {
     updateFeishuOptionsVisibility(e.target.checked);
   });
+
+  document.getElementById('saveToNotion').addEventListener('change', (e) => {
+    updateNotionOptionsVisibility(e.target.checked);
+  });
+
+  // 测试 Notion 连接 (V4.0.1)
+  document.getElementById('testNotionBtn').addEventListener('click', testNotionConnection);
 
   // 保存评论复选框控制子选项
   document.getElementById('saveComments').addEventListener('change', (e) => {
