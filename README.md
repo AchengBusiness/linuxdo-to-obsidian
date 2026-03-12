@@ -17,13 +17,39 @@
 
 ## 支持的论坛
 
-| 论坛类型 | 说明 |
-|---------|------|
-| **LinuxDo** | 原始支持，完全兼容 |
-| **Discourse Meta** | 官方 Discourse 论坛 |
-| **Ruby China** | 中文技术社区（Discourse） |
-| **Emacs China** | 中文 Emacs 社区 |
-| **其他 Discourse** | 自动检测，或手动添加自定义站点 |
+### 已测试站点（V3.6.0）
+
+| 站点 | URL | Discourse 版本 | 测试状态 |
+|-----|-----|---------------|---------|
+| **LinuxDo** | linux.do | 2026.3.0-latest | ✅ 完全兼容 |
+| **Discourse Meta** | meta.discourse.org | 2026.3.0-latest | ✅ 完全兼容 |
+| **Emacs China** | emacs-china.org | 3.5.0.beta8-dev | ✅ 完全兼容 |
+
+### 应支持站点（未测试）
+
+以下站点使用 Discourse 框架，理论上完全兼容：
+
+| 站点 | URL | 类型 |
+|-----|-----|------|
+| **Rust Users** | users.rust-lang.org | 编程语言社区 |
+| **Docker Community** | forums.docker.com | 技术社区 |
+| **Brave Community** | community.brave.com | 浏览器社区 |
+| **Envato Forums** | forums.envato.com | 商业论坛 |
+| **Hugo Discourse** | discourse.gohugo.io | 技术社区 |
+| **Atom Discuss** | discuss.atom.io | 技术社区 |
+| **OpenAI Community** | community.openai.com | AI社区 |
+
+### 非 Discourse 站点（不支持）
+
+| 站点 | URL | 实际框架 |
+|-----|-----|---------|
+| **Ruby China** | ruby-china.org | Homeland（非Discourse） |
+
+> **注意**：Ruby China 虽然外观类似，但使用的是 Homeland 框架，不是 Discourse，因此不支持。
+
+### 自定义站点
+
+对于私有部署或未被自动检测的 Discourse 站点，可以在设置中手动添加。
 
 ## 核心功能
 

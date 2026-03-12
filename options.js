@@ -1,6 +1,6 @@
 // Discourse Saver V3.6.0 - 设置页面
 // 支持 Obsidian 和飞书多维表格
-// V3.6.0: 支持所有 Discourse 论坛 + 自定义站点管理
+// V3.6.0: 支持所有 Discourse 论坛 + 自定义站点管理 + 可折叠面板
 
 // 默认配置
 const DEFAULT_CONFIG = {
@@ -42,6 +42,30 @@ const DEFAULT_CONFIG = {
   commentCount: 100,
   foldComments: false
 };
+
+// 折叠/展开面板
+function toggleSection(sectionId) {
+  const content = document.getElementById('content-' + sectionId);
+  const icon = document.getElementById('icon-' + sectionId);
+
+  if (content && icon) {
+    content.classList.toggle('expanded');
+    icon.classList.toggle('expanded');
+  }
+}
+
+// 展开所有面板
+function expandAllSections() {
+  const sections = ['pluginStatus', 'siteSettings', 'saveTarget', 'obsidianSettings', 'feishuSettings', 'contentSettings', 'commentSettings'];
+  sections.forEach(sectionId => {
+    const content = document.getElementById('content-' + sectionId);
+    const icon = document.getElementById('icon-' + sectionId);
+    if (content && icon) {
+      content.classList.add('expanded');
+      icon.classList.add('expanded');
+    }
+  });
+}
 
 // 渲染自定义站点列表
 function renderCustomSites(sites) {
@@ -186,6 +210,9 @@ function loadOptions() {
     updateFeishuOptionsVisibility(config.saveToFeishu);
     updateCommentOptionsVisibility(config.saveComments);
     updateImageSettingsVisibility(config.embedImages);
+
+    // 确保所有面板默认展开
+    expandAllSections();
   });
 }
 
@@ -194,7 +221,10 @@ function updateObsidianSectionVisibility(enabled) {
   const section = document.getElementById('obsidianSection');
   if (section) {
     section.style.opacity = enabled ? '1' : '0.5';
-    section.style.pointerEvents = enabled ? 'auto' : 'none';
+    const content = section.querySelector('.section-content');
+    if (content) {
+      content.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
   }
 }
 
@@ -202,11 +232,8 @@ function updateObsidianSectionVisibility(enabled) {
 function updateFeishuOptionsVisibility(enabled) {
   const feishuOptions = document.getElementById('feishuOptions');
   if (feishuOptions) {
-    if (enabled) {
-      feishuOptions.classList.remove('disabled');
-    } else {
-      feishuOptions.classList.add('disabled');
-    }
+    feishuOptions.style.opacity = enabled ? '1' : '0.5';
+    feishuOptions.style.pointerEvents = enabled ? 'auto' : 'none';
   }
 }
 
@@ -224,28 +251,13 @@ function updateCommentOptionsVisibility(enabled) {
 
 // 更新图片设置面板可见性 (V3.6.0)
 function updateImageSettingsVisibility(enabled) {
-  const content = document.getElementById('imageSettingsContent');
-  const icon = document.getElementById('imageSettingsIcon');
-
-  if (content && icon) {
+  const panel = document.getElementById('imageSettingsPanel');
+  if (panel) {
     if (enabled) {
-      content.classList.add('expanded');
-      icon.classList.add('expanded');
+      panel.classList.remove('disabled');
     } else {
-      content.classList.remove('expanded');
-      icon.classList.remove('expanded');
+      panel.classList.add('disabled');
     }
-  }
-}
-
-// 切换图片设置面板展开/折叠
-function toggleImageSettings() {
-  const content = document.getElementById('imageSettingsContent');
-  const icon = document.getElementById('imageSettingsIcon');
-
-  if (content && icon) {
-    content.classList.toggle('expanded');
-    icon.classList.toggle('expanded');
   }
 }
 
@@ -436,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCommentOptionsVisibility(e.target.checked);
   });
 
-  // 图片嵌入设置折叠面板 (V3.6.0)
+  // 图片嵌入设置 (V3.6.0)
   document.getElementById('embedImages').addEventListener('change', (e) => {
     updateImageSettingsVisibility(e.target.checked);
 
@@ -450,12 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 点击折叠面板标题（除checkbox外）切换展开/折叠
-  document.getElementById('imageSettingsIcon').addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleImageSettings();
-  });
-
   // 移除文件夹路径首尾斜杠
   document.getElementById('folderPath').addEventListener('input', (e) => {
     let value = e.target.value.trim();
@@ -465,3 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// 将 toggleSection 暴露到全局作用域（供 onclick 使用）
+window.toggleSection = toggleSection;
