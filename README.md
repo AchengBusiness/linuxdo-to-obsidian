@@ -1,6 +1,8 @@
-# LinuxDo to Obsidian V3.5.13
+# Discourse Saver V3.6.0
 
-一键保存 LinuxDo 帖子+评论到 **Obsidian** 或 **飞书多维表格**，支持双保存。
+一键保存 **任意 Discourse 论坛**（包括 LinuxDo）帖子+评论到 **Obsidian** 或 **飞书多维表格**。
+
+> **V3.6.0 新功能**：支持所有 Discourse 论坛 + 图片 Base64 嵌入 + 自定义站点管理
 
 ## 浏览器支持
 
@@ -13,6 +15,16 @@
 | Firefox | ❌ 不支持 | 扩展API不兼容 |
 | Safari | ❌ 不支持 | 扩展API不兼容 |
 
+## 支持的论坛
+
+| 论坛类型 | 说明 |
+|---------|------|
+| **LinuxDo** | 原始支持，完全兼容 |
+| **Discourse Meta** | 官方 Discourse 论坛 |
+| **Ruby China** | 中文技术社区（Discourse） |
+| **Emacs China** | 中文 Emacs 社区 |
+| **其他 Discourse** | 自动检测，或手动添加自定义站点 |
+
 ## 核心功能
 
 | 操作 | 效果 |
@@ -23,6 +35,16 @@
 | **Ctrl+Shift+S**（Mac: **⌘+Shift+S**）| 快捷键保存主帖 |
 
 ---
+
+## V3.6.0 新功能
+
+| 特性 | 说明 |
+|-----|------|
+| **支持所有 Discourse** | 自动检测任意 Discourse 论坛（四层检测机制） |
+| **自定义站点管理** | 手动添加/删除站点，支持私有部署 |
+| **图片 Base64 嵌入** | 将图片转为 Base64 嵌入笔记，单文件完整保存 |
+| **图片压缩** | 可设置最大宽度和质量，控制文件大小 |
+| **GIF 处理** | 可选跳过 GIF 动图（保留原链接） |
 
 ## V3.5 版本特性
 
@@ -59,10 +81,11 @@
 
 ### 保存帖子
 
-1. 访问任意 LinuxDo 帖子页面
-2. 找到帖子/评论右下角的**链接按钮**（链条图标）
-3. **单击** → 保存到 Obsidian/飞书
-4. **双击** → 复制链接到剪贴板
+1. 访问任意 **Discourse 论坛**（LinuxDo、Discourse Meta 等）帖子页面
+2. 插件会**自动检测**并激活（首次访问会显示提示）
+3. 找到帖子/评论右下角的**链接按钮**（链条图标）
+4. **单击** → 保存到 Obsidian/飞书
+5. **双击** → 复制链接到剪贴板
 
 ### 文件命名规则
 
@@ -82,6 +105,17 @@
 | 配置项 | 说明 |
 |-------|------|
 | 启用插件 | 关闭后链接按钮恢复原功能（需刷新页面） |
+
+### 自定义站点（V3.6.0）
+
+| 配置项 | 说明 |
+|-------|------|
+| 添加站点 | 输入域名（如 `forum.example.com`）手动添加 |
+| 删除站点 | 点击站点旁的删除按钮移除 |
+
+> **说明**：大多数 Discourse 论坛会被自动检测。自定义站点功能用于：
+> - 私有部署的 Discourse（可能移除了标识）
+> - 检测失败的特殊站点
 
 ### 保存目标
 
@@ -115,6 +149,17 @@
 |-------|------|
 | 添加元数据 | 是否添加中文 frontmatter |
 | 保留图片链接 | 是否保留帖子中的图片 |
+
+### 图片嵌入设置（V3.6.0）
+
+| 配置项 | 说明 |
+|-------|------|
+| 将图片嵌入笔记 | 启用后图片转为 Base64 嵌入 Markdown |
+| 图片最大宽度 | 0=原始尺寸，或选择 1920/1280/800/480px |
+| 图片质量 | 100%/90%/80%/60%，降低质量减小文件 |
+| 跳过 GIF 动图 | 启用后 GIF 保留原链接（Base64 会失去动画） |
+
+> **⚠️ 重要**：启用图片嵌入后，**必须同时启用 Advanced URI 插件**，否则大文件无法保存。插件会自动提示并启用。
 
 ### 评论设置
 
@@ -363,6 +408,25 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 ## 更新日志
 
+### v3.6.0 (2026-03-12)
+
+- **新增**：支持所有 Discourse 论坛
+  - 四层自动检测机制（Meta Generator、DOM 结构、CSS 类、Ember 特征）
+  - 自定义站点管理（手动添加/删除）
+  - 新增 `detector.js` 轻量级检测器，按需加载主脚本
+- **新增**：图片 Base64 嵌入功能
+  - 将图片转为 Base64 嵌入 Markdown，单文件完整保存
+  - 支持图片压缩（最大宽度、质量设置）
+  - 支持跳过 GIF 动图（保留原链接）
+  - 自动启用 Advanced URI（大文件必需）
+- **优化**：内存管理改进
+  - 修复 Object URL 内存泄漏
+  - 重复图片下载去重优化
+- **优化**：UI 改进
+  - 图片设置可折叠面板
+  - 自定义站点管理界面
+  - Advanced URI 自动提示
+
 ### v3.5.13 (2026-03-11)
 
 - **新增**：全面增强错误提示系统
@@ -465,9 +529,10 @@ https://feishu.cn/base/XxXxXxXxXxXxXxXxXxXxXxXxXxX?table=tblXxXxXxXxXxXx&view=..
 
 ```
 linuxdo-to-obsidian/
-├── manifest.json           # 插件配置（V3）
+├── manifest.json           # 插件配置（Manifest V3）
+├── detector.js             # 站点检测器（V3.6.0 新增）
 ├── content.js              # 内容脚本（劫持+保存）
-├── background.js           # 飞书 API 处理
+├── background.js           # 后台脚本（飞书API+脚本注入）
 ├── options.html            # 配置页面
 ├── options.js              # 配置逻辑
 ├── lib/
@@ -485,7 +550,8 @@ linuxdo-to-obsidian/
 |-----|------|
 | storage | 保存用户配置 |
 | activeTab | 访问当前标签页 |
-| host_permissions | 访问飞书 API |
+| scripting | 动态脚本注入（V3.6.0） |
+| host_permissions | 访问飞书 API + 所有网站检测 |
 
 ---
 
