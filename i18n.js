@@ -111,7 +111,9 @@ const i18n = {
       saved: '已保存',
       testConnection: '测试连接',
       testing: '测试中...',
-      addSite: '添加站点'
+      addSite: '添加站点',
+      add: '添加',
+      reset: '恢复默认'
     },
     messages: {
       saveSuccess: '设置已保存',
@@ -242,7 +244,9 @@ const i18n = {
       saved: 'Saved',
       testConnection: 'Test Connection',
       testing: 'Testing...',
-      addSite: 'Add Site'
+      addSite: 'Add Site',
+      add: 'Add',
+      reset: 'Reset to Default'
     },
     messages: {
       saveSuccess: 'Settings saved',
