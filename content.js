@@ -694,7 +694,7 @@
 
         if (!embedUrl) return '[' + content + '](' + href + ')';
 
-        return '\n\n<iframe src="' + embedUrl + '" width="700" height="400" frameborder="0" allowfullscreen></iframe>\n\n';
+        return '\n\n<iframe src="' + embedUrl + '" style="width:100%; aspect-ratio:16/9;" frameborder="0" allowfullscreen></iframe>\n\n';
       }
     });
 
