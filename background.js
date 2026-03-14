@@ -1224,6 +1224,68 @@ function parseMarkdownToRichText(text) {
   return richTextArray;
 }
 
+// V4.2.3: 将常见语言名称映射到 Notion 支持的语言标识符
+function mapLanguageToNotion(lang) {
+  const languageMap = {
+    // 常见语言
+    'js': 'javascript',
+    'ts': 'typescript',
+    'py': 'python',
+    'rb': 'ruby',
+    'sh': 'bash',
+    'shell': 'bash',
+    'zsh': 'bash',
+    'yml': 'yaml',
+    'md': 'markdown',
+    'htm': 'html',
+    'dockerfile': 'docker',
+    'objc': 'objective-c',
+    'objective-c': 'objective-c',
+    'cs': 'c#',
+    'csharp': 'c#',
+    'cpp': 'c++',
+    'c++': 'c++',
+    'golang': 'go',
+    'rs': 'rust',
+    'kt': 'kotlin',
+    'vb': 'visual basic',
+    'asm': 'assembly',
+    'tex': 'latex',
+    'text': 'plain text',
+    'txt': 'plain text',
+    '': 'plain text'
+  };
+
+  const normalized = (lang || '').toLowerCase().trim();
+
+  // 如果有直接映射则使用
+  if (languageMap[normalized]) {
+    return languageMap[normalized];
+  }
+
+  // Notion 支持的语言列表（直接返回）
+  const notionLanguages = [
+    'abap', 'arduino', 'bash', 'basic', 'c', 'clojure', 'coffeescript',
+    'c++', 'c#', 'css', 'dart', 'diff', 'docker', 'elixir', 'elm',
+    'erlang', 'flow', 'fortran', 'f#', 'gherkin', 'glsl', 'go', 'graphql',
+    'groovy', 'haskell', 'html', 'java', 'javascript', 'json', 'julia',
+    'kotlin', 'latex', 'less', 'lisp', 'livescript', 'lua', 'makefile',
+    'markdown', 'markup', 'matlab', 'mermaid', 'nix', 'objective-c',
+    'ocaml', 'pascal', 'perl', 'php', 'plain text', 'powershell',
+    'prolog', 'protobuf', 'python', 'r', 'reason', 'ruby', 'rust',
+    'sass', 'scala', 'scheme', 'scss', 'shell', 'sql', 'swift',
+    'typescript', 'vb.net', 'verilog', 'vhdl', 'visual basic',
+    'webassembly', 'xml', 'yaml', 'java/c/c++/c#'
+  ];
+
+  if (notionLanguages.includes(normalized)) {
+    return normalized;
+  }
+
+  // 默认返回 plain text
+  return 'plain text';
+}
+
 // 构建 Notion Page 数据
 function buildNotionPageData(postData, config) {
   const properties = {};
@@ -1283,18 +1345,54 @@ function buildNotionPageData(postData, config) {
 
   // 添加内容
   // V4.0.2: 改进换行处理，确保单换行也能正确显示
-  // V4.2.3: 添加内容预处理（HTML表格、图片链接等）
+  // V4.2.3: 添加内容预处理（HTML表格、图片链接等）+ 代码块支持
   if (postData.content) {
     // 预处理内容：处理 HTML 表格和特殊格式
-    const preprocessedContent = preprocessMarkdownText(postData.content);
-    // 先按双换行拆分成段落块，再按单换行拆分成行
-    // 这样确保所有换行都能在 Notion 中正确显示
-    const paragraphs = preprocessedContent.split('\n\n');
+    let preprocessedContent = preprocessMarkdownText(postData.content);
     let blockCount = 0;
     const maxBlocks = 100; // Notion 限制 100 个 blocks
 
+    // V4.2.3: 先提取并处理围栏代码块 ```language ... ```
+    // 使用占位符替换代码块，稍后再恢复
+    const codeBlocks = [];
+    preprocessedContent = preprocessedContent.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+      codeBlocks.push({
+        language: lang || 'plain text',
+        code: code.trim()
+      });
+      return placeholder;
+    });
+
+    // 先按双换行拆分成段落块，再按单换行拆分成行
+    // 这样确保所有换行都能在 Notion 中正确显示
+    const paragraphs = preprocessedContent.split('\n\n');
+
     for (const para of paragraphs) {
       if (blockCount >= maxBlocks) break;
+
+      // 检查是否是代码块占位符
+      const codeBlockMatch = para.trim().match(/^__CODE_BLOCK_(\d+)__$/);
+      if (codeBlockMatch) {
+        const codeIndex = parseInt(codeBlockMatch[1]);
+        const codeData = codeBlocks[codeIndex];
+        if (codeData) {
+          // V4.2.3: 创建 Notion 原生代码块
+          children.push({
+            object: 'block',
+            type: 'code',
+            code: {
+              rich_text: [{
+                type: 'text',
+                text: { content: codeData.code.substring(0, 2000) }
+              }],
+              language: mapLanguageToNotion(codeData.language)
+            }
+          });
+          blockCount++;
+        }
+        continue;
+      }
 
       // 按单换行拆分每个段落块
       const lines = para.split('\n');
@@ -1373,20 +1471,43 @@ function buildNotionPageData(postData, config) {
             });
           }
         } else if (/^>\s*\[!(WARNING|NOTE|TIP|IMPORTANT|CAUTION)\]/i.test(trimmedLine) || /^>\s*[⚠️📝💡❗⛔🔔]/u.test(trimmedLine)) {
-          // V4.2.3: 警告/提示框转为 Notion callout 块
+          // V4.2.3: 警告/提示框转为 Notion callout 块（带背景色）
           const calloutMatch = trimmedLine.match(/^>\s*\[!(WARNING|NOTE|TIP|IMPORTANT|CAUTION)\]\s*(.*)/i);
           const emojiMatch = trimmedLine.match(/^>\s*([⚠️📝💡❗⛔🔔])\s*(.*)/u);
 
           let emoji = '💡';
+          let color = 'gray_background';
           let content = trimmedLine.replace(/^>\s*/, '');
 
           if (calloutMatch) {
             const type = calloutMatch[1].toUpperCase();
             content = calloutMatch[2] || '';
-            emoji = type === 'WARNING' ? '⚠️' : type === 'NOTE' ? '📝' : type === 'TIP' ? '💡' : type === 'IMPORTANT' ? '❗' : '⛔';
+            // 根据类型设置 emoji 和背景色
+            if (type === 'WARNING') {
+              emoji = '⚠️';
+              color = 'yellow_background';
+            } else if (type === 'NOTE') {
+              emoji = '📝';
+              color = 'blue_background';
+            } else if (type === 'TIP') {
+              emoji = '💡';
+              color = 'green_background';
+            } else if (type === 'IMPORTANT') {
+              emoji = '❗';
+              color = 'red_background';
+            } else if (type === 'CAUTION') {
+              emoji = '⛔';
+              color = 'orange_background';
+            }
           } else if (emojiMatch) {
             emoji = emojiMatch[1];
             content = emojiMatch[2] || '';
+            // 根据 emoji 设置背景色
+            if (emoji === '⚠️') color = 'yellow_background';
+            else if (emoji === '📝') color = 'blue_background';
+            else if (emoji === '💡') color = 'green_background';
+            else if (emoji === '❗') color = 'red_background';
+            else if (emoji === '⛔') color = 'orange_background';
           }
 
           children.push({
@@ -1394,7 +1515,8 @@ function buildNotionPageData(postData, config) {
             type: 'callout',
             callout: {
               rich_text: parseMarkdownToRichText(content),
-              icon: { type: 'emoji', emoji: emoji }
+              icon: { type: 'emoji', emoji: emoji },
+              color: color
             }
           });
         } else if (trimmedLine === '---' || trimmedLine === '***') {
