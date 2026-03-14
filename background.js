@@ -1058,21 +1058,98 @@ async function updateNotionPage(token, pageId, pageData) {
   return result;
 }
 
+// V4.2.3: 预处理文本，处理特殊 Markdown 格式
+function preprocessMarkdownText(text) {
+  let processed = text;
+
+  // 1. 处理图片链接 [![alt](img-url)](link-url) -> [alt](link-url)
+  // 这种格式是可点击的图片，转换为普通链接
+  processed = processed.replace(/\[!\[([^\]]*)\]\([^)]+\)\]\((https?:\/\/[^)]+)\)/g, '[$1]($2)');
+
+  // 2. 处理 HTML 表格 - 提取表格内容为文本
+  // 匹配整个 table 标签
+  processed = processed.replace(/<table[\s\S]*?<\/table>/gi, (tableHtml) => {
+    // 提取表头
+    const headers = [];
+    const headerMatch = tableHtml.match(/<th[^>]*>([\s\S]*?)<\/th>/gi);
+    if (headerMatch) {
+      headerMatch.forEach(th => {
+        const content = th.replace(/<[^>]+>/g, '').trim();
+        if (content) headers.push(content);
+      });
+    }
+
+    // 提取表格行
+    const rows = [];
+    const rowMatches = tableHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi);
+    if (rowMatches) {
+      rowMatches.forEach((tr, index) => {
+        if (index === 0 && headerMatch) return; // 跳过表头行
+        const cells = [];
+        const cellMatches = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi);
+        if (cellMatches) {
+          cellMatches.forEach(td => {
+            // 保留链接格式
+            let content = td.replace(/<a[^>]+href="([^"]+)"[^>]*>([^<]*)<\/a>/gi, '[$2]($1)');
+            content = content.replace(/<[^>]+>/g, '').trim();
+            if (content) cells.push(content);
+          });
+        }
+        if (cells.length > 0) rows.push(cells.join(' | '));
+      });
+    }
+
+    // 构建文本表格
+    let result = '';
+    if (headers.length > 0) {
+      result += '| ' + headers.join(' | ') + ' |\n';
+      result += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+    }
+    if (rows.length > 0) {
+      result += rows.map(r => '| ' + r + ' |').join('\n');
+    }
+    return result || '[表格内容]';
+  });
+
+  // 3. 清理其他 HTML 标签但保留内容
+  // 保留链接
+  processed = processed.replace(/<a[^>]+href="([^"]+)"[^>]*>([^<]*)<\/a>/gi, '[$2]($1)');
+  // 保留加粗
+  processed = processed.replace(/<(strong|b)>([^<]*)<\/(strong|b)>/gi, '**$2**');
+  // 保留斜体
+  processed = processed.replace(/<(em|i)>([^<]*)<\/(em|i)>/gi, '*$2*');
+  // 保留代码
+  processed = processed.replace(/<code>([^<]*)<\/code>/gi, '`$1`');
+  // 移除其他 HTML 标签
+  processed = processed.replace(/<[^>]+>/g, '');
+
+  // 4. 清理 HTML 实体
+  processed = processed.replace(/&nbsp;/g, ' ');
+  processed = processed.replace(/&lt;/g, '<');
+  processed = processed.replace(/&gt;/g, '>');
+  processed = processed.replace(/&amp;/g, '&');
+  processed = processed.replace(/&quot;/g, '"');
+
+  return processed;
+}
+
 // V4.2.3: 解析 Markdown 格式为 Notion rich_text 格式
 // 支持链接 [text](url)、加粗 **text**、斜体 *text*、行内代码 `code`
 function parseMarkdownToRichText(text) {
+  // 先预处理文本
+  const processedText = preprocessMarkdownText(text);
   const richTextArray = [];
 
   // 综合正则：匹配链接、加粗、斜体、行内代码
-  // 顺序很重要：先匹配链接，再匹配加粗（**），再匹配斜体（*），最后匹配代码
-  const combinedRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
+  // 改进的链接正则：支持链接文本中包含特殊字符
+  const combinedRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = combinedRegex.exec(text)) !== null) {
+  while ((match = combinedRegex.exec(processedText)) !== null) {
     // 添加匹配前的普通文本
     if (match.index > lastIndex) {
-      const plainText = text.substring(lastIndex, match.index);
+      const plainText = processedText.substring(lastIndex, match.index);
       if (plainText) {
         richTextArray.push({
           type: 'text',
@@ -1126,8 +1203,8 @@ function parseMarkdownToRichText(text) {
   }
 
   // 添加最后剩余的普通文本
-  if (lastIndex < text.length) {
-    const remainingText = text.substring(lastIndex);
+  if (lastIndex < processedText.length) {
+    const remainingText = processedText.substring(lastIndex);
     if (remainingText) {
       richTextArray.push({
         type: 'text',
@@ -1140,7 +1217,7 @@ function parseMarkdownToRichText(text) {
   if (richTextArray.length === 0) {
     return [{
       type: 'text',
-      text: { content: text.substring(0, 2000) }
+      text: { content: processedText.substring(0, 2000) }
     }];
   }
 
@@ -1206,10 +1283,13 @@ function buildNotionPageData(postData, config) {
 
   // 添加内容
   // V4.0.2: 改进换行处理，确保单换行也能正确显示
+  // V4.2.3: 添加内容预处理（HTML表格、图片链接等）
   if (postData.content) {
+    // 预处理内容：处理 HTML 表格和特殊格式
+    const preprocessedContent = preprocessMarkdownText(postData.content);
     // 先按双换行拆分成段落块，再按单换行拆分成行
     // 这样确保所有换行都能在 Notion 中正确显示
-    const paragraphs = postData.content.split('\n\n');
+    const paragraphs = preprocessedContent.split('\n\n');
     let blockCount = 0;
     const maxBlocks = 100; // Notion 限制 100 个 blocks
 
@@ -1274,6 +1354,47 @@ function buildNotionPageData(postData, config) {
             type: 'numbered_list_item',
             numbered_list_item: {
               rich_text: parseMarkdownToRichText(listContent)
+            }
+          });
+        } else if (/^\|.+\|$/.test(trimmedLine)) {
+          // V4.2.3: Markdown 表格行转为代码块（保持表格格式）
+          // 跳过表格分隔行 |---|---|
+          if (!/^\|[\s-:|]+\|$/.test(trimmedLine)) {
+            children.push({
+              object: 'block',
+              type: 'paragraph',
+              paragraph: {
+                rich_text: [{
+                  type: 'text',
+                  text: { content: trimmedLine.substring(0, 2000) },
+                  annotations: { code: true }
+                }]
+              }
+            });
+          }
+        } else if (/^>\s*\[!(WARNING|NOTE|TIP|IMPORTANT|CAUTION)\]/i.test(trimmedLine) || /^>\s*[⚠️📝💡❗⛔🔔]/u.test(trimmedLine)) {
+          // V4.2.3: 警告/提示框转为 Notion callout 块
+          const calloutMatch = trimmedLine.match(/^>\s*\[!(WARNING|NOTE|TIP|IMPORTANT|CAUTION)\]\s*(.*)/i);
+          const emojiMatch = trimmedLine.match(/^>\s*([⚠️📝💡❗⛔🔔])\s*(.*)/u);
+
+          let emoji = '💡';
+          let content = trimmedLine.replace(/^>\s*/, '');
+
+          if (calloutMatch) {
+            const type = calloutMatch[1].toUpperCase();
+            content = calloutMatch[2] || '';
+            emoji = type === 'WARNING' ? '⚠️' : type === 'NOTE' ? '📝' : type === 'TIP' ? '💡' : type === 'IMPORTANT' ? '❗' : '⛔';
+          } else if (emojiMatch) {
+            emoji = emojiMatch[1];
+            content = emojiMatch[2] || '';
+          }
+
+          children.push({
+            object: 'block',
+            type: 'callout',
+            callout: {
+              rich_text: parseMarkdownToRichText(content),
+              icon: { type: 'emoji', emoji: emoji }
             }
           });
         } else if (trimmedLine === '---' || trimmedLine === '***') {
