@@ -28,114 +28,114 @@
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Rust Users | users.rust-lang.org | ✅ |
-| Swift Forums | forums.swift.org | ✅ |
-| Go Forum | forum.golangbridge.org | ✅ |
-| Julia | discourse.julialang.org | ✅ |
-| Elixir Forum | elixirforum.com | ✅ |
-| Haskell | discourse.haskell.org | ✅ |
-| Scala Users | users.scala-lang.org | ✅ |
-| OCaml | discuss.ocaml.org | ✅ |
-| Crystal | forum.crystal-lang.org | ✅ |
-| Clojure | clojureverse.org | ✅ |
-| Purescript | discourse.purescript.org | ✅ |
-| Zig | ziggit.dev | ✅ |
+| Rust Users | [users.rust-lang.org](https://users.rust-lang.org) | ✅ |
+| Swift Forums | [forums.swift.org](https://forums.swift.org) | ✅ |
+| Go Forum | [forum.golangbridge.org](https://forum.golangbridge.org) | ✅ |
+| Julia | [discourse.julialang.org](https://discourse.julialang.org) | ✅ |
+| Elixir Forum | [elixirforum.com](https://elixirforum.com) | ✅ |
+| Haskell | [discourse.haskell.org](https://discourse.haskell.org) | ✅ |
+| Scala Users | [users.scala-lang.org](https://users.scala-lang.org) | ✅ |
+| OCaml | [discuss.ocaml.org](https://discuss.ocaml.org) | ✅ |
+| Crystal | [forum.crystal-lang.org](https://forum.crystal-lang.org) | ✅ |
+| Clojure | [clojureverse.org](https://clojureverse.org) | ✅ |
+| Purescript | [discourse.purescript.org](https://discourse.purescript.org) | ✅ |
+| Zig | [ziggit.dev](https://ziggit.dev) | ✅ |
 
 #### AI/ML社区 (3/3)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| OpenAI Community | community.openai.com | ✅ |
-| Hugging Face | discuss.huggingface.co | ✅ |
-| PyTorch | discuss.pytorch.org | ✅ |
+| OpenAI Community | [community.openai.com](https://community.openai.com) | ✅ |
+| Hugging Face | [discuss.huggingface.co](https://discuss.huggingface.co) | ✅ |
+| PyTorch | [discuss.pytorch.org](https://discuss.pytorch.org) | ✅ |
 
 #### Web框架 (3/4)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Django | forum.djangoproject.com | ✅ |
-| Ruby on Rails | discuss.rubyonrails.org | ✅ |
-| Ember | discuss.emberjs.com | ✅ |
-| Vue.js | forum.vuejs.org | ❌ API受限 |
+| Django | [forum.djangoproject.com](https://forum.djangoproject.com) | ✅ |
+| Ruby on Rails | [discuss.rubyonrails.org](https://discuss.rubyonrails.org) | ✅ |
+| Ember | [discuss.emberjs.com](https://discuss.emberjs.com) | ✅ |
+| Vue.js | [forum.vuejs.org](https://forum.vuejs.org) | ❌ API受限 |
 
 #### DevOps/云服务 (8/9)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Docker Community | forums.docker.com | ✅ |
-| Kubernetes | discuss.kubernetes.io | ✅ |
-| Terraform (HashiCorp) | discuss.hashicorp.com | ✅ |
-| Ansible | forum.ansible.com | ✅ |
-| GitLab | forum.gitlab.com | ✅ |
-| CircleCI | discuss.circleci.com | ✅ |
-| Fly.io | community.fly.io | ✅ |
-| Vercel | vercel.community | ✅ |
-| Rancher | forums.rancher.com | ❌ API受限 |
+| Docker Community | [forums.docker.com](https://forums.docker.com) | ✅ |
+| Kubernetes | [discuss.kubernetes.io](https://discuss.kubernetes.io) | ✅ |
+| Terraform (HashiCorp) | [discuss.hashicorp.com](https://discuss.hashicorp.com) | ✅ |
+| Ansible | [forum.ansible.com](https://forum.ansible.com) | ✅ |
+| GitLab | [forum.gitlab.com](https://forum.gitlab.com) | ✅ |
+| CircleCI | [discuss.circleci.com](https://discuss.circleci.com) | ✅ |
+| Fly.io | [community.fly.io](https://community.fly.io) | ✅ |
+| Vercel | [vercel.community](https://vercel.community) | ✅ |
+| Rancher | [forums.rancher.com](https://forums.rancher.com) | ❌ API受限 |
 
 #### 数据库 (5/5)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Elastic | discuss.elastic.co | ✅ |
-| MongoDB | mongodb.com/community/forums | ✅ |
-| Redis | forum.redis.io | ✅ |
-| CockroachDB | forum.cockroachlabs.com | ✅ |
-| TimescaleDB | timescale.com/forum | ✅ |
+| Elastic | [discuss.elastic.co](https://discuss.elastic.co) | ✅ |
+| MongoDB | [mongodb.com/community/forums](https://www.mongodb.com/community/forums) | ✅ |
+| Redis | [forum.redis.io](https://forum.redis.io) | ✅ |
+| CockroachDB | [forum.cockroachlabs.com](https://forum.cockroachlabs.com) | ✅ |
+| TimescaleDB | [timescale.com/forum](https://www.timescale.com/forum) | ✅ |
 
 #### 开源项目 (8/8)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Fedora | discussion.fedoraproject.org | ✅ |
-| Ubuntu | discourse.ubuntu.com | ✅ |
-| NixOS | discourse.nixos.org | ✅ |
-| Home Assistant | community.home-assistant.io | ✅ |
-| Hugo | discourse.gohugo.io | ✅ |
-| Let's Encrypt | community.letsencrypt.org | ✅ |
-| Grafana | community.grafana.com | ✅ |
-| Tor Project | forum.torproject.net | ✅ |
+| Fedora | [discussion.fedoraproject.org](https://discussion.fedoraproject.org) | ✅ |
+| Ubuntu | [discourse.ubuntu.com](https://discourse.ubuntu.com) | ✅ |
+| NixOS | [discourse.nixos.org](https://discourse.nixos.org) | ✅ |
+| Home Assistant | [community.home-assistant.io](https://community.home-assistant.io) | ✅ |
+| Hugo | [discourse.gohugo.io](https://discourse.gohugo.io) | ✅ |
+| Let's Encrypt | [community.letsencrypt.org](https://community.letsencrypt.org) | ✅ |
+| Grafana | [community.grafana.com](https://community.grafana.com) | ✅ |
+| Tor Project | [forum.torproject.net](https://forum.torproject.net) | ✅ |
 
 #### 游戏开发 (5/5)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Godot | forum.godotengine.org | ✅ |
-| Defold | forum.defold.com | ✅ |
-| Phaser | phaser.discourse.group | ✅ |
-| Roblox DevForum | devforum.roblox.com | ✅ |
-| Unreal Engine | forums.unrealengine.com | ✅ |
+| Godot | [forum.godotengine.org](https://forum.godotengine.org) | ✅ |
+| Defold | [forum.defold.com](https://forum.defold.com) | ✅ |
+| Phaser | [phaser.discourse.group](https://phaser.discourse.group) | ✅ |
+| Roblox DevForum | [devforum.roblox.com](https://devforum.roblox.com) | ✅ |
+| Unreal Engine | [forums.unrealengine.com](https://forums.unrealengine.com) | ✅ |
 
 #### 区块链/Web3 (4/4)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Ethereum Research | ethresear.ch | ✅ |
-| Polkadot | forum.polkadot.network | ✅ |
-| Cosmos | forum.cosmos.network | ✅ |
-| Near Protocol | gov.near.org | ✅ |
+| Ethereum Research | [ethresear.ch](https://ethresear.ch) | ✅ |
+| Polkadot | [forum.polkadot.network](https://forum.polkadot.network) | ✅ |
+| Cosmos | [forum.cosmos.network](https://forum.cosmos.network) | ✅ |
+| Near Protocol | [gov.near.org](https://gov.near.org) | ✅ |
 
 #### 生产力工具 (2/2)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Obsidian | forum.obsidian.md | ✅ |
-| Logseq | discuss.logseq.com | ✅ |
+| Obsidian | [forum.obsidian.md](https://forum.obsidian.md) | ✅ |
+| Logseq | [discuss.logseq.com](https://discuss.logseq.com) | ✅ |
 
 #### 浏览器/隐私 (2/2)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Brave Community | community.brave.com | ✅ |
-| Bitwarden | community.bitwarden.com | ✅ |
+| Brave Community | [community.brave.com](https://community.brave.com) | ✅ |
+| Bitwarden | [community.bitwarden.com](https://community.bitwarden.com) | ✅ |
 
 #### 其他 (3/4)
 
 | 站点 | URL | 状态 |
 |------|-----|------|
-| Netlify | answers.netlify.com | ✅ |
-| Webflow | forum.webflow.com | ✅ |
-| Linux.do | linux.do | ✅ |
-| Atom/Electron | discuss.atom.io | ❌ 已关闭 |
+| Netlify | [answers.netlify.com](https://answers.netlify.com) | ✅ |
+| Webflow | [forum.webflow.com](https://forum.webflow.com) | ✅ |
+| Linux.do | [linux.do](https://linux.do) | ✅ |
+| Atom/Electron | [discuss.atom.io](https://discuss.atom.io) | ❌ 已关闭 |
 
 ### 需要登录的站点
 
@@ -143,20 +143,20 @@
 
 | 站点 | URL | 备注 |
 |------|-----|------|
-| Envato Forums | forums.envato.com | 商业论坛 |
-| Revolut Community | community.revolut.com | 金融服务 |
-| Cloudflare Community | community.cloudflare.com | 需要账号 |
-| Unity Discussions | discussions.unity.com | 开发者账号 |
-| Affinity Forum | forum.affinity.serif.com | 产品用户 |
+| Envato Forums | [forums.envato.com](https://forums.envato.com) | 商业论坛 |
+| Revolut Community | [community.revolut.com](https://community.revolut.com) | 金融服务 |
+| Cloudflare Community | [community.cloudflare.com](https://community.cloudflare.com) | 需要账号 |
+| Unity Discussions | [discussions.unity.com](https://discussions.unity.com) | 开发者账号 |
+| Affinity Forum | [forum.affinity.serif.com](https://forum.affinity.serif.com) | 产品用户 |
 
 ### 非 Discourse 站点（不支持）
 
 | 站点 | URL | 实际框架 | 说明 |
 |-----|-----|---------|------|
-| **Ruby China** | ruby-china.org | Homeland | 外观类似但框架不同 |
-| **V2EX** | v2ex.com | 自研 | 非 Discourse |
-| **NodeSeek** | nodeseek.com | 自研 | 非 Discourse |
-| **LearnKu** | learnku.com | 自研 | 非 Discourse |
+| **Ruby China** | [ruby-china.org](https://ruby-china.org) | Homeland | 外观类似但框架不同 |
+| **V2EX** | [v2ex.com](https://v2ex.com) | 自研 | 非 Discourse |
+| **NodeSeek** | [nodeseek.com](https://nodeseek.com) | 自研 | 非 Discourse |
+| **LearnKu** | [learnku.com](https://learnku.com) | 自研 | 非 Discourse |
 
 > **注意**：以上站点虽然是技术社区，但使用的不是 Discourse 框架，因此不支持。
 
