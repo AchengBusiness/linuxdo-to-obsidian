@@ -992,9 +992,9 @@
           return '\n\n![' + fileName + '](' + href + ')\n\n';
         }
 
-        // PDF 使用 iframe 嵌入预览（可在 Obsidian 中直接查看）
+        // PDF 显示下载链接（iframe 跨域限制，改用本地预览提示）
         if (/\.pdf(\?|$)/i.test(hrefLower)) {
-          return '\n\n📄 **' + fileName + '**\n<iframe src="' + href + '" style="width:100%; height:600px; border:1px solid #ddd; border-radius:4px;"></iframe>\n📥 [下载 PDF](' + href + ')\n\n';
+          return '\n\n📄 **' + fileName + '**\n📥 [下载 PDF](' + href + ')\n💡 *下载后可在 Obsidian 中使用 `![[' + fileName + ']]` 嵌入预览*\n\n';
         }
 
         // Word 文档
