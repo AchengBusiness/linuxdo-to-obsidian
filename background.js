@@ -1,4 +1,4 @@
-// Discourse Saver - Background Script V4.2.3
+// Discourse Saver - Background Script V4.2.6
 // 处理飞书/Notion API请求（解决CORS问题）+ 动态脚本注入
 // V3.5: 支持上传MD文件作为附件
 // V3.5.2: 支持飞书国内版和Lark国际版
@@ -1456,7 +1456,7 @@ function buildNotionPageData(postData, config) {
     // 预处理内容：处理 HTML 表格和特殊格式
     let preprocessedContent = preprocessMarkdownText(postData.content);
     let blockCount = 0;
-    const maxBlocks = 100; // Notion 限制 100 个 blocks
+    const maxBlocks = 500; // V4.2.5: 增加到500块，支持更长的帖子。Notion API每次只能发100块，但saveToNotion已有分页处理
 
     // V4.2.3: 先提取并处理围栏代码块 ```language ... ```
     // 使用占位符替换代码块，稍后再恢复
@@ -1466,6 +1466,29 @@ function buildNotionPageData(postData, config) {
       codeBlocks.push({
         language: lang || 'plain text',
         code: code.trim()
+      });
+      return placeholder;
+    });
+
+    // V4.2.6: 处理折叠内容 <details><summary>...</summary>...</details> 和 [details="..."]...[/details]
+    const toggleBlocks = [];
+
+    // 处理 HTML 格式: <details><summary>标题</summary>内容</details>
+    preprocessedContent = preprocessedContent.replace(/<details[^>]*>\s*<summary>([^<]*)<\/summary>([\s\S]*?)<\/details>/gi, (match, title, content) => {
+      const placeholder = `__TOGGLE_BLOCK_${toggleBlocks.length}__`;
+      toggleBlocks.push({
+        title: title.trim() || '展开',
+        content: content.trim()
+      });
+      return placeholder;
+    });
+
+    // 处理 BBCode 格式: [details="标题"]内容[/details] 或 [details]内容[/details]
+    preprocessedContent = preprocessedContent.replace(/\[details(?:="([^"]*)")?\]([\s\S]*?)\[\/details\]/gi, (match, title, content) => {
+      const placeholder = `__TOGGLE_BLOCK_${toggleBlocks.length}__`;
+      toggleBlocks.push({
+        title: title ? title.trim() : '展开',
+        content: content.trim()
       });
       return placeholder;
     });
@@ -1658,6 +1681,47 @@ function buildNotionPageData(postData, config) {
                 text: { content: codeData.code.substring(0, 2000) }
               }],
               language: mapLanguageToNotion(codeData.language)
+            }
+          });
+          blockCount++;
+        }
+        i++;
+        continue;
+      }
+
+      // V4.2.6: 检查是否是折叠块占位符
+      const toggleBlockMatch = trimmedLine.match(/^__TOGGLE_BLOCK_(\d+)__$/);
+      if (toggleBlockMatch) {
+        const toggleIndex = parseInt(toggleBlockMatch[1]);
+        const toggleData = toggleBlocks[toggleIndex];
+        if (toggleData) {
+          // 解析折叠内容为子块
+          const toggleChildren = [];
+          const contentLines = toggleData.content.split('\n').filter(l => l.trim());
+
+          for (const contentLine of contentLines) {
+            const trimmedContent = contentLine.trim();
+            if (trimmedContent) {
+              toggleChildren.push({
+                object: 'block',
+                type: 'paragraph',
+                paragraph: {
+                  rich_text: parseMarkdownToRichText(trimmedContent)
+                }
+              });
+            }
+          }
+
+          children.push({
+            object: 'block',
+            type: 'toggle',
+            toggle: {
+              rich_text: [{ type: 'text', text: { content: toggleData.title } }],
+              children: toggleChildren.length > 0 ? toggleChildren : [{
+                object: 'block',
+                type: 'paragraph',
+                paragraph: { rich_text: [] }
+              }]
             }
           });
           blockCount++;
