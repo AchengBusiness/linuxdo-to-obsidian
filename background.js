@@ -1,4 +1,4 @@
-// Discourse Saver - Background Script V4.2.1
+// Discourse Saver - Background Script V4.2.2
 // 处理飞书/Notion API请求（解决CORS问题）+ 动态脚本注入
 // V3.5: 支持上传MD文件作为附件
 // V3.5.2: 支持飞书国内版和Lark国际版

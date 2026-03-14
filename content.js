@@ -1,4 +1,4 @@
-// Discourse Saver - Content Script V4.2.1
+// Discourse Saver - Content Script V4.2.2
 // 劫持链接按钮，保存帖子+评论到Obsidian（保留颜色样式）
 // V3.5: 支持同时保存到飞书多维表格（带MD附件）
 // V3.5.1: 单击保存到Obsidian，双击触发原生复制链接
@@ -20,6 +20,7 @@
 // V4.0.3: onebox 链接预览优化 + 在线视频链接自动转 iframe（YouTube/Bilibili/Vimeo）
 // V4.0.4: 修复视频封面重复问题 - 视频链接转iframe时自动删除封面图片，非视频链接保留缩略图
 // V4.0.6: 修复只启用飞书/Notion时的反馈和错误处理问题
+// V4.2.2: 新增文档和音频嵌入支持 - PDF预览、Word/Excel/PPT图标链接、SVG嵌入、音频播放器
 //
 // 功能说明：
 // - 点击主帖链接按钮：保存主帖（如开启"保存评论"则包含所有评论）
@@ -954,6 +955,102 @@
         }
 
         return '[' + content + '](' + href + ')';
+      }
+    });
+
+    // 规则7.2：处理音频链接转为 HTML5 audio 嵌入
+    // 支持格式：mp3, wav, ogg, m4a, flac, aac, webm
+    turndownService.addRule('audioEmbed', {
+      filter: (node) => {
+        if (node.nodeName !== 'A') return false;
+        const href = (node.href || '').toLowerCase();
+        return /\.(mp3|wav|ogg|m4a|flac|aac|webm)(\?|$)/i.test(href);
+      },
+      replacement: (content, node) => {
+        const href = node.href || '';
+        const fileName = content.trim() || href.split('/').pop().split('?')[0] || '音频';
+        // 使用 HTML5 audio 标签嵌入
+        return '\n\n🎵 **' + fileName + '**\n<audio controls src="' + href + '" style="width:100%;"></audio>\n\n';
+      }
+    });
+
+    // 规则7.3：处理文档链接（PDF、Word、Excel、PPT、SVG等）
+    // PDF 使用 iframe 嵌入预览，其他显示为带图标的链接
+    turndownService.addRule('documentEmbed', {
+      filter: (node) => {
+        if (node.nodeName !== 'A') return false;
+        const href = (node.href || '').toLowerCase();
+        return /\.(pdf|docx?|xlsx?|pptx?|svg|csv|txt|rtf|odt|ods|odp)(\?|$)/i.test(href);
+      },
+      replacement: (content, node) => {
+        const href = node.href || '';
+        const hrefLower = href.toLowerCase();
+        const fileName = content.trim() || href.split('/').pop().split('?')[0] || '文档';
+
+        // SVG 直接作为图片嵌入
+        if (/\.svg(\?|$)/i.test(hrefLower)) {
+          return '\n\n![' + fileName + '](' + href + ')\n\n';
+        }
+
+        // PDF 使用 iframe 嵌入预览（可在 Obsidian 中直接查看）
+        if (/\.pdf(\?|$)/i.test(hrefLower)) {
+          return '\n\n📄 **' + fileName + '**\n<iframe src="' + href + '" style="width:100%; height:600px; border:1px solid #ddd; border-radius:4px;"></iframe>\n📥 [下载 PDF](' + href + ')\n\n';
+        }
+
+        // Word 文档
+        if (/\.docx?(\?|$)/i.test(hrefLower)) {
+          return '\n\n📝 **' + fileName + '**\n📥 [下载 Word 文档](' + href + ')\n\n';
+        }
+
+        // Excel 表格
+        if (/\.(xlsx?|csv)(\?|$)/i.test(hrefLower)) {
+          return '\n\n📊 **' + fileName + '**\n📥 [下载表格文件](' + href + ')\n\n';
+        }
+
+        // PPT 演示文稿
+        if (/\.pptx?(\?|$)/i.test(hrefLower)) {
+          return '\n\n📽️ **' + fileName + '**\n📥 [下载演示文稿](' + href + ')\n\n';
+        }
+
+        // 纯文本文件
+        if (/\.(txt|rtf)(\?|$)/i.test(hrefLower)) {
+          return '\n\n📃 **' + fileName + '**\n📥 [下载文本文件](' + href + ')\n\n';
+        }
+
+        // OpenDocument 格式
+        if (/\.od[tsp](\?|$)/i.test(hrefLower)) {
+          const icon = /\.odt/i.test(hrefLower) ? '📝' : /\.ods/i.test(hrefLower) ? '📊' : '📽️';
+          return '\n\n' + icon + ' **' + fileName + '**\n📥 [下载文档](' + href + ')\n\n';
+        }
+
+        // 默认处理
+        return '\n\n📎 **' + fileName + '**\n📥 [下载文件](' + href + ')\n\n';
+      }
+    });
+
+    // 规则7.4：处理 HTML5 audio 标签（论坛中已有的音频播放器）
+    turndownService.addRule('audioTag', {
+      filter: (node) => {
+        return node.nodeName === 'AUDIO';
+      },
+      replacement: (content, node) => {
+        const src = node.src || node.querySelector('source')?.src || '';
+        if (!src) return '';
+        const fileName = src.split('/').pop().split('?')[0] || '音频';
+        return '\n\n🎵 **' + fileName + '**\n<audio controls src="' + src + '" style="width:100%;"></audio>\n\n';
+      }
+    });
+
+    // 规则7.5：处理 HTML5 video 标签（论坛中已有的视频播放器）
+    turndownService.addRule('videoTag', {
+      filter: (node) => {
+        return node.nodeName === 'VIDEO';
+      },
+      replacement: (content, node) => {
+        const src = node.src || node.querySelector('source')?.src || '';
+        if (!src) return '';
+        // 使用 video 标签嵌入
+        return '\n\n<video controls src="' + src + '" style="width:100%; max-width:800px;"></video>\n\n';
       }
     });
 

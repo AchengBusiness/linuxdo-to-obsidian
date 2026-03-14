@@ -1,4 +1,4 @@
-// Discourse Saver V4.2.1 - 设置页面
+// Discourse Saver V4.2.2 - 设置页面
 // 支持 Obsidian、飞书多维表格和 Notion
 // V3.6.0: 支持所有 Discourse 论坛 + 自定义站点管理 + 可折叠面板
 // V4.0.1: 新增 Notion Database 保存功能

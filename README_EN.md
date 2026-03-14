@@ -1,13 +1,13 @@
-# Discourse Saver V4.2.1
+# Discourse Saver V4.2.2
 
 **[中文](README.md) | English**
 
 Save **any Discourse forum** posts and comments to **Obsidian**, **Feishu Bitable**, or **Notion** with one click.
 
-> **V4.2.1 Updates**:
-> - Feishu Content Optimization - Remove image links, keep only plain text and valuable links
-> - Valuable Links Preserved - Videos (YouTube/Bilibili), Code Repos (GitHub/GitLab), Forums (linux.do, etc.)
-> - Content Cleanup - Auto-clean special characters, normalize line breaks, control length
+> **V4.2.2 Updates**:
+> - Document Embedding - PDF preview, Word/Excel/PPT icon links, SVG image embedding
+> - Audio Embedding - MP3/WAV/OGG files converted to HTML5 audio player
+> - HTML5 Media Tags - Support for native video/audio tag conversion
 
 ## Browser Support
 

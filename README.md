@@ -1,13 +1,13 @@
-# Discourse Saver V4.2.1
+# Discourse Saver V4.2.2
 
 **中文 | [English](README_EN.md)**
 
 通用 Discourse 论坛内容保存工具 - 一键保存任意 Discourse 论坛（如 LinuxDo、Discourse Meta、Rust Users 等数百个站点）的帖子和评论到 Obsidian、飞书多维表格或 Notion。
 
-> **V4.2.1 更新**：
-> - 飞书正文优化 - 移除图片链接，只保留纯文本和有价值链接
-> - 有价值链接保留 - 视频(YouTube/Bilibili)、代码仓库(GitHub/GitLab)、论坛(linux.do等)
-> - 内容清理 - 自动清理特殊字符、规范换行、控制长度
+> **V4.2.2 更新**：
+> - 新增文档嵌入 - PDF 预览、Word/Excel/PPT 带图标链接、SVG 图片嵌入
+> - 新增音频嵌入 - MP3/WAV/OGG 等音频文件转 HTML5 播放器
+> - 新增视频标签 - 支持 HTML5 video/audio 原生标签转换
 
 ## 浏览器支持
 
@@ -606,6 +606,24 @@
 ---
 
 ## 更新日志
+
+### v4.2.2 (2026-03-14)
+
+- **新增**：文档嵌入支持
+  - PDF 文件：使用 iframe 嵌入预览，可在 Obsidian 中直接查看
+  - Word 文档（.doc/.docx）：显示为带 📝 图标的下载链接
+  - Excel 表格（.xls/.xlsx/.csv）：显示为带 📊 图标的下载链接
+  - PPT 演示文稿（.ppt/.pptx）：显示为带 📽️ 图标的下载链接
+  - SVG 图片：直接作为图片嵌入显示
+  - 纯文本文件（.txt/.rtf）：显示为带 📃 图标的下载链接
+  - OpenDocument 格式（.odt/.ods/.odp）：对应图标的下载链接
+- **新增**：音频嵌入支持
+  - 支持格式：MP3、WAV、OGG、M4A、FLAC、AAC、WebM
+  - 使用 HTML5 `<audio>` 标签嵌入，可在 Obsidian 中直接播放
+  - 显示文件名和播放控件
+- **新增**：HTML5 媒体标签处理
+  - 识别论坛中已有的 `<audio>` 和 `<video>` 标签
+  - 自动转换为可播放的嵌入格式
 
 ### v4.2.1 (2026-03-14)
 
