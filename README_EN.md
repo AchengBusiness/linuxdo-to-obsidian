@@ -1,13 +1,15 @@
-# Discourse Saver V4.2.2
+# Discourse Saver V4.3.5
 
 **[中文](README.md) | English**
 
 Save **any Discourse forum** posts and comments to **Obsidian**, **Feishu Bitable**, or **Notion** with one click.
 
-> **V4.2.2 Updates**:
-> - Document Embedding - PDF preview, Word/Excel/PPT icon links, SVG image embedding
-> - Audio Embedding - MP3/WAV/OGG files converted to HTML5 audio player
-> - HTML5 Media Tags - Support for native video/audio tag conversion
+> **V4.3.5 Updates**:
+> - **HTML Export Enhancement** - Image Lightbox, table fullscreen/copy, 5 themes
+> - **PWA Support** - Installable to device home screen, offline viewing
+> - **PDF Export** - One-click export to PDF from toolbar
+> - **Code Copy** - One-click code block copy
+> - **Responsive Design** - Perfect for mobile, tablet, desktop
 
 ## Browser Support
 
@@ -174,6 +176,35 @@ For privately deployed or undetected Discourse sites, you can manually add them 
 | **Ctrl+Shift+S** (Mac: **⌘+Shift+S**) | Keyboard shortcut to save post |
 
 ---
+
+## V4.3.5 New Features
+
+### HTML Export Enhancement
+
+| Feature | Description |
+|---------|-------------|
+| **Image Lightbox** | Click to zoom, ESC or click to close |
+| **Image Gallery** | Supports figure/figcaption format, fallback on load failure |
+| **Table Enhancement** | One-click copy as TSV, fullscreen view, zebra stripes, scroll hints |
+| **5 Themes** | LinuxDo Original, Dark Geek, Business, Sakura, Lavender |
+| **PWA Support** | Installable to device home screen, offline viewing |
+| **PDF Export** | One-click export to PDF from toolbar |
+| **Code Copy** | One-click code block copy |
+| **Responsive Design** | Perfect for mobile, tablet, desktop |
+
+### Settings Page
+
+| Feature | Description |
+|---------|-------------|
+| **HTML Export Tips** | Base64 image embedding file size warning |
+
+### Performance Optimization
+
+| Feature | Description |
+|---------|-------------|
+| **Comment Batching** | 20 per batch, prevents rate limiting |
+| **Notion Batching** | 100 blocks per batch, follows API limits |
+| **Feishu Large Files** | Supports extra-long content upload |
 
 ## V4.0.5 New Features
 
@@ -605,6 +636,24 @@ See [NOTION-GUIDE.html](NOTION-GUIDE.html)
 
 ## Changelog
 
+### v4.3.5 (2026-03-15)
+
+- **New**: HTML Export Enhancement
+  - Image Lightbox - Click to zoom, ESC or click to close
+  - Image Gallery - Supports figure/figcaption format
+  - Image Error Handling - Shows placeholder on load failure
+  - Table Enhancement - One-click copy as TSV, fullscreen, zebra stripes
+  - Table Scroll Hints - Shows swipe hint for wide tables
+  - 5 Theme Switching - LinuxDo Original, Dark Geek, Business, Sakura, Lavender
+  - PWA Support - Installable to device home screen
+  - PDF Export - One-click export from toolbar
+  - Code Block Copy - One-click copy code content
+  - Responsive Design - Perfect for mobile, tablet, desktop
+- **New**: Settings page HTML export tips - Base64 image embedding file size warning
+- **Optimize**: Comment batching - 20 per batch, prevents rate limiting
+- **Optimize**: Notion batching - 100 blocks per batch, follows API limits
+- **Optimize**: Feishu large files - Supports extra-long content upload
+
 ### v4.0.5 (2026-03-14)
 
 - **New**: Multi-language support (Chinese/English)
@@ -714,6 +763,7 @@ Plugin directory discourse-saver contains the following files:
 
 **lib Directory:**
 - turndown.min.js - HTML to Markdown library
+- marked.min.js - Markdown to HTML library (for HTML export)
 
 **icons Directory:**
 - icon16.png / icon48.png / icon128.png - Extension icons

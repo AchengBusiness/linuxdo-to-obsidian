@@ -69,6 +69,10 @@ const DEFAULT_CONFIG = {
   notionPropSavedDate: '',
   notionPropCommentCount: '',
 
+  // V4.2.6: HTML 导出设置
+  exportHtml: false,
+  feishuUploadHtml: false,
+
   // 内容设置
   addMetadata: true,
   includeImages: true,
@@ -223,6 +227,7 @@ function loadOptions() {
     // 保存目标
     document.getElementById('saveToObsidian').checked = config.saveToObsidian;
     document.getElementById('saveToFeishu').checked = config.saveToFeishu;
+    document.getElementById('exportHtml').checked = config.exportHtml || false;
 
     // Obsidian 设置
     document.getElementById('vaultName').value = config.vaultName;
@@ -236,6 +241,7 @@ function loadOptions() {
     document.getElementById('feishuAppToken').value = config.feishuAppToken;
     document.getElementById('feishuTableId').value = config.feishuTableId;
     document.getElementById('feishuUploadAttachment').checked = config.feishuUploadAttachment;
+    document.getElementById('feishuUploadHtml').checked = config.feishuUploadHtml || false;
 
     // Notion 设置 (V4.0.1)
     // V4.2.3: 根据语言使用对应的默认值
@@ -367,6 +373,7 @@ function saveOptions(e) {
     saveToObsidian: document.getElementById('saveToObsidian').checked,
     saveToFeishu: document.getElementById('saveToFeishu').checked,
     saveToNotion: document.getElementById('saveToNotion').checked,
+    exportHtml: document.getElementById('exportHtml').checked,
 
     // Obsidian 设置
     vaultName: document.getElementById('vaultName').value.trim(),
@@ -380,6 +387,7 @@ function saveOptions(e) {
     feishuAppToken: document.getElementById('feishuAppToken').value.trim(),
     feishuTableId: document.getElementById('feishuTableId').value.trim(),
     feishuUploadAttachment: document.getElementById('feishuUploadAttachment').checked,
+    feishuUploadHtml: document.getElementById('feishuUploadHtml').checked,
 
     // Notion 设置 (V4.0.1)
     notionToken: document.getElementById('notionToken').value.trim(),
@@ -409,7 +417,7 @@ function saveOptions(e) {
   };
 
   // 验证：插件启用时至少选择一个保存目标
-  if (config.pluginEnabled && !config.saveToObsidian && !config.saveToFeishu && !config.saveToNotion) {
+  if (config.pluginEnabled && !config.saveToObsidian && !config.saveToFeishu && !config.saveToNotion && !config.exportHtml) {
     showStatus('请至少选择一个保存目标', 'error');
     return;
   }

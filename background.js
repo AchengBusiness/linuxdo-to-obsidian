@@ -1,4 +1,4 @@
-// Discourse Saver - Background Script V4.2.6
+// Discourse Saver - Background Script V4.3.5
 // 处理飞书/Notion API请求（解决CORS问题）+ 动态脚本注入
 // V3.5: 支持上传MD文件作为附件
 // V3.5.2: 支持飞书国内版和Lark国际版
@@ -13,6 +13,8 @@
 // V3.5.12: 增强飞书测试连接 - 验证必需字段是否存在及类型是否正确
 // V3.5.13: 增强错误提示 - 针对常见配置错误给出友好提示
 // V3.6.0: 支持所有 Discourse 论坛 - 自动检测 + 自定义站点管理
+// V4.2.6: 飞书HTML附件上传 + 大内容批处理优化
+// V4.3.5: 版本同步
 
 // API 域名映射
 const API_DOMAINS = {
@@ -563,9 +565,52 @@ async function uploadMdFile(token, appToken, title, mdContent, apiDomain = 'feis
   return data.data.file_token;
 }
 
-// 保存到飞书多维表格（可选MD附件）
+// V4.2.6: 上传HTML文件到飞书素材库
+async function uploadHtmlFile(token, appToken, title, htmlContent, apiDomain = 'feishu') {
+  console.log('[Discourse Saver→飞书] 开始上传HTML文件...');
+
+  // 清理文件名中的非法字符
+  const safeTitle = title
+    .replace(/[《》<>:"/\\|?*]/g, '')
+    .replace(/\s+/g, '-')
+    .substring(0, 50);
+
+  const fileName = `${safeTitle}.html`;
+
+  // 创建 Blob
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+
+  // 构建 FormData
+  const formData = new FormData();
+  formData.append('file', blob, fileName);
+  formData.append('file_name', fileName);
+  formData.append('parent_type', 'bitable_file');
+  formData.append('parent_node', appToken);
+  formData.append('size', blob.size.toString());
+
+  const baseUrl = getApiBaseUrl(apiDomain);
+  const response = await fetch(`${baseUrl}/open-apis/drive/v1/medias/upload_all`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const data = await safeParseJson(response, '上传HTML文件');
+
+  if (data.code !== 0) {
+    console.error('[Discourse Saver→飞书] 上传HTML文件失败:', data);
+    throw new Error(`上传HTML文件失败: ${data.msg}`);
+  }
+
+  console.log('[Discourse Saver→飞书] HTML文件上传成功，file_token:', data.data.file_token);
+  return data.data.file_token;
+}
+
+// 保存到飞书多维表格（可选MD/HTML附件）
 async function saveToFeishu(config, postData) {
-  const { apiDomain, appId, appSecret, appToken, tableId, uploadAttachment } = config;
+  const { apiDomain, appId, appSecret, appToken, tableId, uploadAttachment, uploadHtmlAttachment } = config;
   const domain = apiDomain || 'feishu';
 
   // 验证必填参数
@@ -586,22 +631,39 @@ async function saveToFeishu(config, postData) {
     '评论数': postData.commentCount || 0
   };
 
-  // 根据配置决定是否上传附件
+  // V4.2.6: 收集所有附件
+  const attachments = [];
+
+  // 根据配置决定是否上传MD附件
   if (uploadAttachment) {
     // 上传MD文件
-    let fileToken = null;
     try {
-      fileToken = await uploadMdFile(token, appToken, postData.title, postData.content, domain);
-      fields['附件'] = [{ file_token: fileToken }];
+      const mdFileToken = await uploadMdFile(token, appToken, postData.title, postData.content, domain);
+      attachments.push({ file_token: mdFileToken });
       console.log('[Discourse Saver→飞书] MD附件上传成功');
     } catch (uploadError) {
-      console.warn('[Discourse Saver→飞书] MD文件上传失败，改为保存文本:', uploadError.message);
-      const sanitizedContent = sanitizeFeishuTextContent(postData.content);
-      console.log('[Discourse Saver→飞书] 正文内容长度:', sanitizedContent.length);
-      fields['正文'] = sanitizedContent;
+      console.warn('[Discourse Saver→飞书] MD文件上传失败:', uploadError.message);
     }
-  } else {
-    // 不上传附件，直接保存文本
+  }
+
+  // V4.2.6: 根据配置决定是否上传HTML附件
+  if (uploadHtmlAttachment && postData.htmlContent) {
+    try {
+      const htmlFileToken = await uploadHtmlFile(token, appToken, postData.title, postData.htmlContent, domain);
+      attachments.push({ file_token: htmlFileToken });
+      console.log('[Discourse Saver→飞书] HTML附件上传成功');
+    } catch (uploadError) {
+      console.warn('[Discourse Saver→飞书] HTML文件上传失败:', uploadError.message);
+    }
+  }
+
+  // 设置附件字段或正文
+  if (attachments.length > 0) {
+    fields['附件'] = attachments;
+  }
+
+  // 如果没有上传任何附件，或者需要保存正文
+  if (attachments.length === 0) {
     const sanitizedContent = sanitizeFeishuTextContent(postData.content);
     console.log('[Discourse Saver→飞书] 正文内容长度:', sanitizedContent.length);
     fields['正文'] = sanitizedContent;
@@ -799,9 +861,9 @@ async function findFeishuRecord(config, url, title) {
   return null;
 }
 
-// 更新飞书记录（可选MD附件）
+// 更新飞书记录（可选MD/HTML附件）
 async function updateFeishuRecord(config, recordId, postData) {
-  const { apiDomain, appId, appSecret, appToken, tableId, uploadAttachment } = config;
+  const { apiDomain, appId, appSecret, appToken, tableId, uploadAttachment, uploadHtmlAttachment } = config;
   const domain = apiDomain || 'feishu';
 
   const token = await getFeishuToken(appId, appSecret, domain);
@@ -818,20 +880,38 @@ async function updateFeishuRecord(config, recordId, postData) {
     '评论数': postData.commentCount || 0
   };
 
-  // 根据配置决定是否上传附件
+  // V4.2.6: 收集所有附件
+  const attachments = [];
+
+  // 根据配置决定是否上传MD附件
   if (uploadAttachment) {
-    let fileToken = null;
     try {
-      fileToken = await uploadMdFile(token, appToken, postData.title, postData.content, domain);
-      fields['附件'] = [{ file_token: fileToken }];
+      const mdFileToken = await uploadMdFile(token, appToken, postData.title, postData.content, domain);
+      attachments.push({ file_token: mdFileToken });
       console.log('[Discourse Saver→飞书] MD附件更新成功');
     } catch (uploadError) {
-      console.warn('[Discourse Saver→飞书] MD文件上传失败，改为保存文本:', uploadError.message);
-      const sanitizedContent = sanitizeFeishuTextContent(postData.content);
-      console.log('[Discourse Saver→飞书] 更新正文内容长度:', sanitizedContent.length);
-      fields['正文'] = sanitizedContent;
+      console.warn('[Discourse Saver→飞书] MD文件上传失败:', uploadError.message);
     }
-  } else {
+  }
+
+  // V4.2.6: 根据配置决定是否上传HTML附件
+  if (uploadHtmlAttachment && postData.htmlContent) {
+    try {
+      const htmlFileToken = await uploadHtmlFile(token, appToken, postData.title, postData.htmlContent, domain);
+      attachments.push({ file_token: htmlFileToken });
+      console.log('[Discourse Saver→飞书] HTML附件更新成功');
+    } catch (uploadError) {
+      console.warn('[Discourse Saver→飞书] HTML文件上传失败:', uploadError.message);
+    }
+  }
+
+  // 设置附件字段或正文
+  if (attachments.length > 0) {
+    fields['附件'] = attachments;
+  }
+
+  // 如果没有上传任何附件，保存正文
+  if (attachments.length === 0) {
     const sanitizedContent = sanitizeFeishuTextContent(postData.content);
     console.log('[Discourse Saver→飞书] 更新正文内容长度:', sanitizedContent.length);
     fields['正文'] = sanitizedContent;
@@ -2302,6 +2382,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           files: ['lib/turndown.min.js']
         });
         console.log('[Discourse Saver] turndown.min.js 注入成功');
+
+        // V4.2.6: 注入 marked 库（用于 Markdown → HTML 转换）
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['lib/marked.min.js']
+        });
+        console.log('[Discourse Saver] marked.min.js 注入成功');
 
         // 注入主脚本
         await chrome.scripting.executeScript({

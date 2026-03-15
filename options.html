@@ -583,6 +583,11 @@
               <label for="saveToNotion" data-i18n="saveTarget.notion">保存到 Notion Database</label> <span class="badge badge-new" data-i18n="badges.new">新</span>
             </div>
 
+            <div class="checkbox-row">
+              <input type="checkbox" id="exportHtml">
+              <label for="exportHtml" data-i18n="saveTarget.exportHtml">导出 HTML 文件</label> <span class="badge badge-new" data-i18n="badges.new">新</span>
+            </div>
+
             <div class="help-text" data-i18n="saveTarget.multiSaveHelp">可以同时保存到多个地方</div>
           </div>
         </div>
@@ -670,6 +675,12 @@
                 <label for="feishuUploadAttachment" data-i18n="feishu.uploadMd">上传 MD 附件（需额外权限，可选）</label>
               </div>
               <div class="help-text" style="margin-left: 24px;" data-i18n="feishu.uploadMdHelpDetail">不勾选则只保存文本摘要，无需 drive 权限</div>
+
+              <div class="checkbox-row" style="margin-top: 8px;">
+                <input type="checkbox" id="feishuUploadHtml">
+                <label for="feishuUploadHtml" data-i18n="feishu.uploadHtml">上传 HTML 附件</label> <span class="badge badge-new" data-i18n="badges.new">新</span>
+              </div>
+              <div class="help-text" style="margin-left: 24px;" data-i18n="feishu.uploadHtmlHelpDetail">同时上传 HTML 格式的完整单页文件</div>
 
               <div class="tip-box" style="margin-top: 16px; background: #fef3c7; border-left-color: #d97706;">
                 <p>
@@ -812,6 +823,9 @@
               </div>
               <div class="warning-text" style="margin-top: 8px; background: #fff3cd; border-color: #ffc107;">
                 <strong data-i18n="content.embedWarning2Title">⚠️ 重要：</strong><span data-i18n="content.embedWarning2Content">图片嵌入会使文件变大，必须启用上方的"使用 Advanced URI 插件"选项才能正常保存到 Obsidian。</span>
+              </div>
+              <div class="warning-text" style="margin-top: 8px; background: #e0f2fe; border-color: #0ea5e9; color: #0369a1;">
+                <strong data-i18n="content.embedWarning3Title">📄 HTML 导出提示：</strong><span data-i18n="content.embedWarning3Content">每张图片约增加 100KB-1MB 文件大小。大文章（图片多或超长内容）建议关闭此功能，HTML 将保留原图链接，支持 10 万字以上内容流畅浏览。</span>
               </div>
 
               <div class="form-group" style="margin-top: 12px;">
