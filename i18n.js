@@ -31,7 +31,13 @@ const i18n = {
       obsidian: '保存到 Obsidian',
       feishu: '保存到飞书多维表格',
       notion: '保存到 Notion Database',
+      exportHtml: '导出 HTML 文件',
       multiSaveHelp: '可以同时保存到多个地方'
+    },
+    html: {
+      folder: 'HTML 导出文件夹',
+      folderPlaceholder: 'Discourse导出',
+      folderHelp: '相对于浏览器下载目录，留空则直接保存到下载目录'
     },
     obsidian: {
       vaultName: 'Vault 名称',
@@ -226,7 +232,13 @@ const i18n = {
       obsidian: 'Save to Obsidian',
       feishu: 'Save to Feishu Bitable',
       notion: 'Save to Notion Database',
+      exportHtml: 'Export HTML File',
       multiSaveHelp: 'Can save to multiple destinations simultaneously'
+    },
+    html: {
+      folder: 'HTML Export Folder',
+      folderPlaceholder: 'Discourse Export',
+      folderHelp: 'Relative to browser download directory, leave empty to save directly'
     },
     obsidian: {
       vaultName: 'Vault Name',

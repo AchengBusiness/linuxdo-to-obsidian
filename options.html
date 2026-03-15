@@ -588,6 +588,13 @@
               <label for="exportHtml" data-i18n="saveTarget.exportHtml">导出 HTML 文件</label> <span class="badge badge-new" data-i18n="badges.new">新</span>
             </div>
 
+            <!-- V4.3.6: HTML 导出文件夹设置 -->
+            <div class="form-group" style="margin-left: 24px; margin-top: 8px;">
+              <label data-i18n="html.folder">HTML 导出文件夹</label>
+              <input type="text" id="htmlExportFolder" value="Discourse导出" placeholder="Discourse导出" data-i18n-placeholder="html.folderPlaceholder">
+              <div class="help-text" data-i18n="html.folderHelp">相对于浏览器下载目录，留空则直接保存到下载目录</div>
+            </div>
+
             <div class="help-text" data-i18n="saveTarget.multiSaveHelp">可以同时保存到多个地方</div>
           </div>
         </div>

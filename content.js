@@ -80,7 +80,8 @@
 
     // V4.2.6: HTML 导出设置
     exportHtml: false,
-    feishuUploadHtml: false
+    feishuUploadHtml: false,
+    htmlExportFolder: 'Discourse导出'  // V4.3.6: HTML 导出文件夹
   };
 
   // V4.2.3: Notion 属性的语言相关默认值
@@ -1622,9 +1623,27 @@
               const safeFileName = isSingleCommentMode
                 ? `${sanitizeFileName(title)}-${targetPostNumber}楼`
                 : (sanitizeFileName(title) || 'discourse-export');
-              downloadFile(htmlContent, `${safeFileName}.html`, 'text/html;charset=utf-8');
-              showNotification('HTML 文件已导出', 'success');
-              console.log('[Discourse Saver] HTML 文件导出成功');
+
+              // V4.3.6: 使用配置的HTML导出文件夹
+              const htmlFolder = config.htmlExportFolder || '';
+              const fullFileName = htmlFolder
+                ? `${htmlFolder}/${safeFileName}.html`
+                : `${safeFileName}.html`;
+
+              // 通过 background.js 下载（支持自定义路径）
+              chrome.runtime.sendMessage({
+                action: 'downloadHtml',
+                filename: fullFileName,
+                content: htmlContent
+              }, response => {
+                if (response?.success) {
+                  showNotification('HTML 文件已导出', 'success');
+                  console.log('[Discourse Saver] HTML 文件导出成功');
+                } else {
+                  showNotification('HTML 导出失败: ' + (response?.error || '未知错误'), 'error');
+                  console.error('[Discourse Saver] HTML 导出失败:', response?.error);
+                }
+              });
             } else {
               console.error('[Discourse Saver] HTML 转换失败');
               showNotification('HTML 导出失败：转换错误', 'error');
@@ -3120,17 +3139,27 @@
       });
 
       // 为所有内容图片添加点击放大
-      document.querySelectorAll('.content img').forEach(img => {
-        // 跳过已处理的或特殊图片（如表情）
-        if (img.width < 50 || img.classList.contains('emoji')) return;
+      function openLightbox(img) {
+        // 检查是否为小图片（表情等）
+        const width = img.naturalWidth || img.width;
+        if (width < 50 || img.classList.contains('emoji')) return;
 
-        img.addEventListener('click', () => {
-          lightboxImg.src = img.src;
-          lightboxCaption.textContent = img.alt || img.title || '';
-          lightboxCaption.style.display = lightboxCaption.textContent ? 'block' : 'none';
-          lightbox.classList.add('active');
-          document.body.style.overflow = 'hidden';
-        });
+        lightboxImg.src = img.src;
+        lightboxCaption.textContent = img.alt || img.title || '';
+        lightboxCaption.style.display = lightboxCaption.textContent ? 'block' : 'none';
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      document.querySelectorAll('.content img').forEach(img => {
+        // 设置可点击样式
+        img.style.cursor = 'pointer';
+
+        // 单击放大
+        img.addEventListener('click', () => openLightbox(img));
+
+        // 双击放大（备用）
+        img.addEventListener('dblclick', () => openLightbox(img));
 
         // 图片加载失败处理
         img.addEventListener('error', () => {

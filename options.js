@@ -72,6 +72,7 @@ const DEFAULT_CONFIG = {
   // V4.2.6: HTML 导出设置
   exportHtml: false,
   feishuUploadHtml: false,
+  htmlExportFolder: 'Discourse导出',  // V4.3.6: HTML 导出文件夹
 
   // 内容设置
   addMetadata: true,
@@ -228,6 +229,7 @@ function loadOptions() {
     document.getElementById('saveToObsidian').checked = config.saveToObsidian;
     document.getElementById('saveToFeishu').checked = config.saveToFeishu;
     document.getElementById('exportHtml').checked = config.exportHtml || false;
+    document.getElementById('htmlExportFolder').value = config.htmlExportFolder || 'Discourse导出';
 
     // Obsidian 设置
     document.getElementById('vaultName').value = config.vaultName;
@@ -374,6 +376,7 @@ function saveOptions(e) {
     saveToFeishu: document.getElementById('saveToFeishu').checked,
     saveToNotion: document.getElementById('saveToNotion').checked,
     exportHtml: document.getElementById('exportHtml').checked,
+    htmlExportFolder: document.getElementById('htmlExportFolder').value.trim(),
 
     // Obsidian 设置
     vaultName: document.getElementById('vaultName').value.trim(),

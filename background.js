@@ -2346,6 +2346,37 @@ async function testNotionConnection(config) {
 
 // 监听来自content script的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // V4.3.6: 处理 HTML 文件下载请求
+  if (request.action === 'downloadHtml') {
+    (async () => {
+      try {
+        console.log('[Discourse Saver] 收到 HTML 下载请求:', request.filename);
+
+        // 创建 Blob URL
+        const blob = new Blob([request.content], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        // 使用 chrome.downloads API 下载
+        const downloadId = await chrome.downloads.download({
+          url: url,
+          filename: request.filename,
+          saveAs: false  // 不弹出保存对话框
+        });
+
+        console.log('[Discourse Saver] HTML 下载已启动, downloadId:', downloadId);
+
+        // 清理 Blob URL
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        sendResponse({ success: true, downloadId });
+      } catch (error) {
+        console.error('[Discourse Saver] HTML 下载失败:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // 保持消息通道开放
+  }
+
   // V3.6.0: 处理动态脚本注入请求（来自 detector.js）
   if (request.action === 'injectContentScript') {
     console.log('[Discourse Saver] 收到脚本注入请求，URL:', request.tabUrl);
